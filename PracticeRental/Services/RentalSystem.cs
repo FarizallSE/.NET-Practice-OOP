@@ -1,5 +1,5 @@
 using PracticeRental.Interface;
-using PracticeRental.Model.Vehicle;
+using PracticeRental.Model.Vehicles;
 
 namespace PracticeRental.Services;
 
@@ -65,7 +65,7 @@ public class RentalSystem : IPrintable
         if (currentCount < MAX_VEHICLES)
         {
             vehicles[currentCount] = v;
-            currentCount++; // Tambah jumlah setiap kali ada kendaraan masuk
+            currentCount++;
         }
         else
         {
@@ -93,8 +93,8 @@ public class RentalSystem : IPrintable
             _ => throw new ArgumentException("Jenis tidak valid.")
         };
     }
-    
-    public void PrintReceipt()
+
+    public void Print()
     {
         throw new NotImplementedException();
     }
