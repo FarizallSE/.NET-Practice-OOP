@@ -24,7 +24,7 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
 
     private readonly decimal _baseSubtotal;
     private readonly decimal _extraCost;
-    private readonly decimal _dailyRate;   // tarif saat disewa (snapshot) untuk hitung denda
+    private readonly decimal _dailyRate;   
     private readonly string _extraInfo;
 
     public RentalItem(Vehicle vehicle, int durationDays)
@@ -57,8 +57,8 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
         IsReturned = true;
     }
 
-    public decimal CalculateSubTotal() => _baseSubtotal;   // biaya sewa dasar
-    public decimal CalculateExtraCost() => _extraCost;     // sopir / helm extra
+    public decimal CalculateSubTotal() => _baseSubtotal;   
+    public decimal CalculateExtraCost() => _extraCost;     
 
     public decimal CalculateFeeDiscount()
     {

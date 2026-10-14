@@ -23,7 +23,7 @@ public class RentalSystem : IPrintable
 
     // Property helper
     public int CatalogCount => catalogCount;
-    public int VehicleCount() => catalogCount; // Kompatibilitas dengan Services sebelumnya
+    public int VehicleCount() => catalogCount; 
     public int TransactionCount => transactionCount;
     public int CustomerCount => customerCount;
     public bool CanCreateTransaction => transactionCount < MaxTransaction;
@@ -88,7 +88,7 @@ public class RentalSystem : IPrintable
         }
     }
 
-    // CLI Interactive Input
+    // CLI Input
     public string ReadVehicleType()
     {
         Console.Write("Jenis (1=Car, 2=Bus, 3=Bike): ");
