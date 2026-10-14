@@ -1,13 +1,12 @@
 using PracticeRental.Interface;
 using PracticeRental.Model.Vehicles;
 
+namespace PracticeRental.Services;
 
-namespace PracticeRental.Model;
-
-// [REVISI] Mengimplementasikan 3 interface:
-//          IPrintable   -> Print()               : cetak baris item di invoice
-//          IDicountable -> CalculateFeeDiscount(): diskon 10% jika sewa > 7 hari
-//          IPenalizable -> CalculateFeeLate()    : denda 10% tarif harian / jam, maks 24 jam
+// Mengimplementasikan 3 interface:
+// IPrintable   -> Print()               : cetak baris item di invoice
+// IDicountable -> CalculateFeeDiscount(): diskon 10% jika sewa > 7 hari
+// IPenalizable -> CalculateFeeLate()    : denda 10% tarif harian / jam, maks 24 jam
 public class RentalItem : IPrintable, IDicountable, IPenalizable
 {
     // Aturan diskon
@@ -22,7 +21,6 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
     public int DurationDays { get; }
     public int HoursLate { get; private set; }
     public bool IsReturned { get; private set; }
-
 
     private readonly decimal _baseSubtotal;
     private readonly decimal _extraCost;

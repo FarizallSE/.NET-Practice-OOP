@@ -1,8 +1,8 @@
 using PracticeRental.Interface;
+using PracticeRental.Model;
 using PracticeRental.Model.Vehicles;
 
-namespace PracticeRental.Model;
-
+namespace PracticeRental.Services;
 
 public class RentalTransaction : IPrintable
 {
