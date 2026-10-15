@@ -62,7 +62,7 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
 
     public decimal CalculateFeeDiscount()
     {
-        return DurationDays > MinDaysForDiscount ? _baseSubtotal * DiscountRate : 0;
+        return DurationDays >= MinDaysForDiscount ? _baseSubtotal * DiscountRate : 0;
     }
 
     public decimal CalculateFeeLate()
