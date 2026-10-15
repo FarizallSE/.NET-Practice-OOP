@@ -8,8 +8,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Interfaces\" />
-      <Folder Include="Models\Vehicles\" />
       <Folder Include="Services\" />
     </ItemGroup>
 
