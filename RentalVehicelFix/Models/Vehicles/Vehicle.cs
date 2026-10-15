@@ -9,23 +9,29 @@ public abstract class Vehicle
 
     public Vehicle(int totalVehicles, string plateNumber, string brand, int year, int dailyRate)
     {
-        TotalVehicles =  totalVehicles;
+        TotalVehicles = totalVehicles;
         PlateNumber = plateNumber;
         Brand = brand;
         Year = year;
         DailyRate = dailyRate;
+        Status = "Available";
     }
 
+    private int _dailyRate;
     public int DailyRate
     {
-        get;
+        get => _dailyRate;
         set
         {
-            int dailyRateField = value <= 0 ? field : throw new Exception("Cannot Assign Daily Rate To Be zero!");
+            if (value <= 0)
+            {
+                throw new Exception("Cannot Assign Daily Rate To Be zero!");
+            }
+            _dailyRate = value;
         }
     }
 
-    public string Status { get; private set; }
+    public string Status { get; private set; } = "Available";
 
     public abstract int GetCost(int days);
 
@@ -34,9 +40,11 @@ public abstract class Vehicle
         return DailyRate * days;
     }
 
-    public int CalculateFine(int lateHours)
+    public virtual int CalculateFine(int lateHours)
     {
-        return 0;
+        if (lateHours <= 0) return 0;
+        int hourlyFineRate = (int)Math.Ceiling(DailyRate * 0.10);
+        return hourlyFineRate * lateHours;
     }
 
     public void Rent()
@@ -46,7 +54,7 @@ public abstract class Vehicle
 
     public void Return()
     {
-        Status = "Returning";   
+        Status = "Available";   
     }
 
     public virtual void Info()
@@ -56,8 +64,5 @@ public abstract class Vehicle
         Console.WriteLine($"PlateNumber : {PlateNumber}");
         Console.WriteLine($"DailyRate   : {DailyRate}");
         Console.WriteLine($"Status      : {Status}");
-        
     }
-
-
 }
