@@ -28,6 +28,7 @@ class Program
             Console.WriteLine("4. Tambah Pelanggan");
             Console.WriteLine("5. Tambah Kendaraan");
             Console.WriteLine("6. Laporan");
+            Console.WriteLine("7. Laporan Pendapatan per Jenis Kendaraan");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine();
@@ -57,6 +58,10 @@ class Program
                 case "6":
                     system.PrintAllTransactions();
                     system.Print();
+                    break;
+                case "7":
+                    var revenueByType = CalculateRevenueByType();
+                    PrintRevenueByType(revenueByType);
                     break;
                 case "0":
                     return;
@@ -173,6 +178,32 @@ class Program
         return null;
     }
 
+    decimal[] CalculateRevenueByType()
+    {
+        decimal[] revenue = new decimal[3];
+
+        foreach (var transaction in system.GetAllTransactions())
+        {
+            if (!transaction.IsCompleted) continue;
+
+            foreach (var item in transaction.GetItems())
+            {
+                int typeIndex = item.TargetVehicle.GetTypeVehicle() switch
+                {
+                    "Car" => 0,
+                    "Bus" => 1,
+                    "Bike" => 2,
+                    _ => -1
+                };
+
+                if (typeIndex >= 0)
+                    revenue[typeIndex] += item.CalculateTotal();
+            }
+        }
+
+        return revenue;
+    }
+
     void PrintTransaction(RentalTransaction transaction)
     {
         transaction.Print();
@@ -189,5 +220,20 @@ class Program
             Console.WriteLine($"Pelanggan: {customer}");
         else
             Console.WriteLine("Pelanggan tidak ditemukan.");
+    }
+
+    void PrintRevenueByType(decimal[] revenue)
+    {
+        string[] typeNames = { "Car", "Bus", "Bike" };
+
+        Console.WriteLine("\n--- PENDAPATAN PER JENIS KENDARAAN ---");
+        decimal total = 0;
+        for (int i = 0; i < revenue.Length; i++)
+        {
+            Console.WriteLine($"{typeNames[i],-5}: Rp {revenue[i],12:N0}");
+            total += revenue[i];
+        }
+        Console.WriteLine("------------------------------");
+        Console.WriteLine($"{"Total",-5}: Rp {total,12:N0}");
     }
 }
