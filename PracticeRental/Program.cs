@@ -6,7 +6,7 @@ namespace PracticeRental;
 
 class Program
 {
-    private RentalSystem _system = new();
+    private RentalSystem system = new();
 
     static void Main(string[] args)
     {
@@ -16,7 +16,7 @@ class Program
 
     void Run()
     {
-        _system.SeedData();
+        system.SeedData();
 
         while (true)
         {
@@ -28,6 +28,7 @@ class Program
             Console.WriteLine("4. Tambah Pelanggan");
             Console.WriteLine("5. Tambah Kendaraan");
             Console.WriteLine("6. Laporan");
+            Console.WriteLine("7. Laporan Pendapatan per Jenis Kendaraan");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine();
@@ -38,20 +39,29 @@ class Program
                     _system.ShowCatalog();
                     break;
                 case "2":
-                    CreateNewTransaction();
+                    var newTransaction = CreateNewTransaction();
+                    if (newTransaction != null)
+                        PrintTransaction(newTransaction);
                     break;
                 case "3":
-                    ProcessReturn();
+                    var returnedTransaction = ProcessReturn();
+                    if (returnedTransaction != null)
+                        PrintTransaction(returnedTransaction);
                     break;
                 case "4":
-                    AddNewCustomer();
+                    var customerAdded = AddNewCustomer();
+                    PrintAddCustomerResult(customerAdded);
                     break;
                 case "5":
-                    _system.AddVehicle();
+                    system.AddVehicle();
                     break;
                 case "6":
-                    _system.PrintAllTransactions();
-                    _system.Print();
+                    system.PrintAllTransactions();
+                    system.Print();
+                    break;
+                case "7":
+                    var revenueByType = CalculateRevenueByType();
+                    PrintRevenueByType(revenueByType);
                     break;
                 case "0":
                     return;
@@ -61,43 +71,28 @@ class Program
         }
     }
 
-    void CreateNewTransaction()
+    RentalTransaction? CreateNewTransaction()
     {
-        _system.ShowCatalog(true);
+        system.ShowCatalog(true);
 
         var customer = GetOrCreateCustomer();
-        if (customer == null) return;
+        if (customer == null) return null;
 
-        var transaction = _system.CreateTransaction(customer);
-        if (transaction == null)
-        {
-            Console.WriteLine("Gagal membuat transaksi.");
-            return;
-        }
+        var transaction = system.CreateTransaction(customer);
+        if (transaction == null) return null;
 
         while (true)
         {
             Console.Write("\nPlat Nomor: ");
             var plate = Console.ReadLine()!;
-            var vehicle = _system.FindVehicle(plate);
+            var vehicle = system.FindVehicle(plate);
 
-            if (vehicle == null)
-            {
-                Console.WriteLine("Kendaraan tidak ditemukan.");
+            if (vehicle == null || !vehicle.IsAvailable)
                 continue;
-            }
-            if (!vehicle.IsAvailable)
-            {
-                Console.WriteLine("Kendaraan sedang disewa.");
-                continue;
-            }
 
             Console.Write("Durasi (hari): ");
             if (!int.TryParse(Console.ReadLine(), out int days) || days <= 0)
-            {
-                Console.WriteLine("Durasi tidak valid.");
                 continue;
-            }
 
             try
             {
@@ -128,15 +123,15 @@ class Program
             if (Console.ReadLine()!.Trim().ToLower() != "y") break;
         }
 
-        transaction.Print();
+        return transaction;
     }
 
-    void ProcessReturn()
+    RentalTransaction? ProcessReturn()
     {
         _system.ProcessReturn();
     }
 
-    void AddNewCustomer()
+    bool AddNewCustomer()
     {
         Console.Write("ID Pelanggan: ");
         if (!int.TryParse(Console.ReadLine(), out int id))
@@ -166,16 +161,12 @@ class Program
     Customer? GetOrCreateCustomer()
     {
         Console.Write("ID Pelanggan: ");
-        if (!int.TryParse(Console.ReadLine(), out int id))
-        {
-            Console.WriteLine("ID tidak valid.");
-            return null;
-        }
+        if (!int.TryParse(Console.ReadLine(), out int id)) return null;
 
-        var customer = _system.FindCustomer(id);
+        var customer = system.FindCustomer(id);
         if (customer != null) return customer;
 
-        Console.WriteLine("Pelanggan tidak ditemukan. Buat baru? (y/n): ");
+        Console.Write("Buat pelanggan baru? (y/n): ");
         if (Console.ReadLine()!.Trim().ToLower() != "y") return null;
 
         Console.Write("Nama: ");
@@ -183,21 +174,68 @@ class Program
         Console.Write("Nomor Kontak: ");
         var contact = Console.ReadLine()!;
 
-        try
-        {
-            if (_system.AddCustomer(new Customer(id, name, contact)))
-            {
-                Console.WriteLine("Pelanggan baru ditambahkan.");
-                return _system.FindCustomer(id);
-            }
+        if (system.AddCustomer(new Customer(id, name, contact)))
+            return system.FindCustomer(id);
 
-            Console.WriteLine("Gagal menambahkan pelanggan.");
-            return null;
-        }
-        catch (Exception ex)
+        return null;
+    }
+
+    decimal[] CalculateRevenueByType()
+    {
+        decimal[] revenue = new decimal[3];
+
+        foreach (var transaction in system.GetAllTransactions())
         {
-            Console.WriteLine($"[Error]: {ex.Message}");
-            return null;
+            if (!transaction.IsCompleted) continue;
+
+            foreach (var item in transaction.GetItems())
+            {
+                int typeIndex = item.TargetVehicle.GetTypeVehicle() switch
+                {
+                    "Car" => 0,
+                    "Bus" => 1,
+                    "Bike" => 2,
+                    _ => -1
+                };
+
+                if (typeIndex >= 0)
+                    revenue[typeIndex] += item.CalculateTotal();
+            }
         }
+
+        return revenue;
+    }
+
+    void PrintTransaction(RentalTransaction transaction)
+    {
+        transaction.Print();
+    }
+
+    void PrintAddCustomerResult(bool success)
+    {
+        Console.WriteLine(success ? "Pelanggan berhasil ditambahkan." : "Gagal menambahkan pelanggan.");
+    }
+
+    void PrintCustomerResult(Customer? customer)
+    {
+        if (customer != null)
+            Console.WriteLine($"Pelanggan: {customer}");
+        else
+            Console.WriteLine("Pelanggan tidak ditemukan.");
+    }
+
+    void PrintRevenueByType(decimal[] revenue)
+    {
+        string[] typeNames = { "Car", "Bus", "Bike" };
+
+        Console.WriteLine("\n--- PENDAPATAN PER JENIS KENDARAAN ---");
+        decimal total = 0;
+        for (int i = 0; i < revenue.Length; i++)
+        {
+            Console.WriteLine($"{typeNames[i],-5}: Rp {revenue[i],12:N0}");
+            total += revenue[i];
+        }
+        Console.WriteLine("------------------------------");
+        Console.WriteLine($"{"Total",-5}: Rp {total,12:N0}");
     }
 }
