@@ -96,7 +96,6 @@ class Program
 
             try
             {
-                var item = new RentalItem(vehicle, days);
 
                 if (vehicle is Car car)
                 {
@@ -108,6 +107,8 @@ class Program
                     Console.Write("Extra helm? (y/n): ");
                     bike.SetIsExtraHelmet(Console.ReadLine()!.Trim().ToLower() == "y");
                 }
+
+                var item = new RentalItem(vehicle, days);
 
                 if (transaction.AddItem(item))
                     Console.WriteLine("Item ditambahkan.");
