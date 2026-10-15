@@ -6,7 +6,6 @@ namespace PracticeRental.Services;
 
 public class RentalSystem : IPrintable
 {
-    // Kapasitas array berukuran tetap (sesuai diagram)
     public const int MaxFleet = 100;
     public const int MaxTransaction = 500;
     public const int MaxCustomer = 500;
@@ -28,7 +27,7 @@ public class RentalSystem : IPrintable
     public int CustomerCount => customerCount;
     public bool CanCreateTransaction => transactionCount < MaxTransaction;
 
-    // ===================== KENDARAAN =====================
+    //Kendaraan 
     public bool AddVehicle(Vehicle vehicle)
     {
         if (catalogCount >= MaxFleet || FindVehicle(vehicle.LicensePlate) != null) return false;
@@ -88,7 +87,7 @@ public class RentalSystem : IPrintable
         }
     }
 
-    // CLI Input
+    // Input
     public string ReadVehicleType()
     {
         Console.Write("Jenis (1=Car, 2=Bus, 3=Bike): ");
@@ -103,24 +102,37 @@ public class RentalSystem : IPrintable
             return;
         }
 
-        var type = ReadVehicleType();
-        Console.Write("Plat Nomor: ");
-        var plate = Console.ReadLine()!;
-        Console.Write("Merk: ");
-        var brand = Console.ReadLine()!;
-        Console.Write("Tahun: ");
-        var year = int.Parse(Console.ReadLine()!);
-        Console.Write("Tarif Harian: ");
-        var rate = int.Parse(Console.ReadLine()!);
+        try
+        {
+            var type = ReadVehicleType();
+            Console.Write("Plat Nomor: ");
+            var plate = Console.ReadLine()?.Trim() ?? string.Empty;
+            Console.Write("Merk: ");
+            var brand = Console.ReadLine()?.Trim() ?? string.Empty;
+            Console.Write("Tahun: ");
+            if (!int.TryParse(Console.ReadLine(), out int year))
+            {
+                throw new Exception("Tahun harus berupa angka yang valid.");
+            }
+            Console.Write("Tarif Harian: ");
+            if (!int.TryParse(Console.ReadLine(), out int rate))
+            {
+                throw new Exception("Tarif harian harus berupa angka yang valid.");
+            }
 
-        var v = CreateVehicleFromInput(type, plate, brand, year, rate);
-        if (AddVehicle(v))
-        {
-            Console.WriteLine("Kendaraan berhasil ditambahkan.");
+            var v = CreateVehicleFromInput(type, plate, brand, year, rate);
+            if (AddVehicle(v))
+            {
+                Console.WriteLine("Kendaraan berhasil ditambahkan.");
+            }
+            else
+            {
+                Console.WriteLine("Gagal menambahkan kendaraan: Plat nomor sudah terdaftar.");
+            }
         }
-        else
+        catch (Exception ex)
         {
-            Console.WriteLine("Gagal menambahkan kendaraan: Plat nomor sudah terdaftar.");
+            Console.WriteLine($"[Error]: {ex.Message}");
         }
     }
 
@@ -131,7 +143,7 @@ public class RentalSystem : IPrintable
             "1" => new Car(plate, brand, year, dailyRate),
             "2" => new Bus(plate, brand, year, dailyRate),
             "3" => new Bike(plate, brand, year, dailyRate),
-            _ => throw new ArgumentException("Jenis tidak valid.")
+            _ => throw new Exception("Jenis kendaraan tidak valid (harus 1=Car, 2=Bus, atau 3=Bike).")
         };
     }
 
@@ -143,12 +155,19 @@ public class RentalSystem : IPrintable
         AddVehicle(new Bike("B 2222 GH", "Yamaha", 2023, 100000));
         AddVehicle(new Bike("D 3333 IJ", "Honda", 2022, 80000));
 
-        // Seed customer awal agar langsung dapat digunakan untuk transaksi
         AddCustomer(new Customer(1, "Budi Santoso", "08123456789"));
         AddCustomer(new Customer(2, "Siti Rahma", "08567891234"));
+
+       var customer1 = FindCustomer(1);
+        var vehicle1 = FindVehicle("B 1234 AB");
+        if (customer1 != null && vehicle1 != null)
+        {
+            var trx1 = CreateTransaction(customer1);
+            trx1?.AddItem(new RentalItem(vehicle1, 3));
+        }
     }
 
-    // ===================== PELANGGAN =====================
+    //Pelanggan 
     public Customer? FindCustomer(int idCustomer)
     {
         for (int i = 0; i < customerCount; i++)
@@ -173,7 +192,7 @@ public class RentalSystem : IPrintable
         return result;
     }
 
-    // ===================== TRANSAKSI =====================
+    //Transaksi
     public RentalTransaction? CreateTransaction(Customer customer)
     {
         if (!CanCreateTransaction) return null;
@@ -212,7 +231,171 @@ public class RentalSystem : IPrintable
         }
     }
 
-    // ===================== PERHITUNGAN PENDAPATAN & LAPORAN =====================
+    //Pengembalian
+    public RentalTransaction? FindActiveTransactionByVehicle(string licensePlate)
+    {
+        for (int i = 0; i < transactionCount; i++)
+        {
+            if (transactions[i].IsCompleted) continue;
+            foreach (var item in transactions[i].GetItems())
+            {
+                if (!item.IsReturned && item.TargetVehicle.LicensePlate.Equals(licensePlate.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    return transactions[i];
+                }
+            }
+        }
+        return null;
+    }
+
+    public bool ProcessReturn(int idTransaction, string licensePlate, int hoursLate)
+    {
+        var trx = FindTransaction(idTransaction);
+        if (trx == null) return false;
+        return trx.ProcessReturn(licensePlate, hoursLate);
+    }
+
+    public bool ProcessReturn(string licensePlate, int hoursLate)
+    {
+        var trx = FindActiveTransactionByVehicle(licensePlate);
+        if (trx == null) return false;
+        return trx.ProcessReturn(licensePlate, hoursLate);
+    }
+
+    public void ProcessReturnVehicle() => ProcessReturn();
+
+    public void ProcessReturn()
+    {
+        Console.WriteLine("\n--- Proses Pengembalian Kendaraan ---");
+        try
+        {
+            Console.WriteLine("Cari transaksi berdasarkan:");
+            Console.WriteLine("1. ID Transaksi");
+            Console.WriteLine("2. Nomor Kendaraan (Plat Nomor)");
+            Console.Write("Pilih metode pencarian (1/2): ");
+            string? searchChoice = Console.ReadLine()?.Trim();
+
+            RentalTransaction? transaction = null;
+            string licensePlate = string.Empty;
+
+            if (searchChoice == "1")
+            {
+                Console.Write("Masukkan ID Transaksi: ");
+                if (!int.TryParse(Console.ReadLine(), out int idTransaction))
+                {
+                    throw new Exception("ID Transaksi harus berupa angka.");
+                }
+
+                transaction = FindTransaction(idTransaction);
+                if (transaction == null)
+                {
+                    throw new Exception($"Transaksi dengan ID {idTransaction} tidak ditemukan.");
+                }
+
+                if (transaction.IsCompleted)
+                {
+                    Console.WriteLine($"Transaksi #{transaction.IdTransaction:D4} sudah selesai (semua kendaraan telah dikembalikan).");
+                    return;
+                }
+
+                var items = transaction.GetItems();
+                var unreturnedItems = new List<RentalItem>();
+                foreach (var item in items)
+                {
+                    if (!item.IsReturned)
+                    {
+                        unreturnedItems.Add(item);
+                    }
+                }
+
+                if (unreturnedItems.Count == 0)
+                {
+                    Console.WriteLine("Tidak ada kendaraan yang perlu dikembalikan pada transaksi ini.");
+                    return;
+                }
+
+                Console.WriteLine($"\nTransaksi #{transaction.IdTransaction:D4} - Pelanggan: {transaction.Customer.Name}");
+                Console.WriteLine("Daftar kendaraan yang sedang disewa:");
+                for (int i = 0; i < unreturnedItems.Count; i++)
+                {
+                    var v = unreturnedItems[i].TargetVehicle;
+                    Console.WriteLine($"  {i + 1}. [{v.GetTypeVehicle()}] {v.Brand} - Plat: {v.LicensePlate}");
+                }
+
+                if (unreturnedItems.Count == 1)
+                {
+                    licensePlate = unreturnedItems[0].TargetVehicle.LicensePlate;
+                    Console.WriteLine($"Kendaraan yang akan diproses: {licensePlate}");
+                }
+                else
+                {
+                    Console.Write("Masukkan nomor plat kendaraan yang ingin dikembalikan: ");
+                    licensePlate = Console.ReadLine()?.Trim()!;
+                }
+            }
+            else if (searchChoice == "2")
+            {
+                Console.Write("Masukkan Nomor Plat Kendaraan: ");
+                licensePlate = Console.ReadLine()?.Trim()!;
+
+                if (string.IsNullOrWhiteSpace(licensePlate))
+                {
+                    throw new Exception("Plat nomor tidak boleh kosong.");
+                }
+
+                transaction = FindActiveTransactionByVehicle(licensePlate);
+                if (transaction == null)
+                {
+                    var vehicle = FindVehicle(licensePlate);
+                    if (vehicle == null)
+                    {
+                        throw new Exception($"Kendaraan dengan plat \"{licensePlate}\" tidak terdaftar di sistem.");
+                    }
+                    if (vehicle.IsAvailable)
+                    {
+                        Console.WriteLine($"Kendaraan dengan plat \"{licensePlate}\" saat ini tidak sedang disewa (tersedia di garasi).");
+                        return;
+                    }
+                    throw new Exception($"Tidak ditemukan transaksi aktif untuk kendaraan dengan plat \"{licensePlate}\".");
+                }
+
+                Console.WriteLine($"\nDitemukan Transaksi #{transaction.IdTransaction:D4} atas nama {transaction.Customer.Name}.");
+            }
+            else
+            {
+                throw new Exception("Pilihan metode pencarian tidak valid (harus 1 atau 2).");
+            }
+
+            Console.Write("Masukkan keterlambatan pengembalian (dalam jam, ketik 0 jika tepat waktu): ");
+            if (!int.TryParse(Console.ReadLine(), out int hoursLate))
+            {
+                throw new Exception("Keterlambatan harus berupa angka jam.");
+            }
+
+            bool success = transaction.ProcessReturn(licensePlate, hoursLate);
+            if (success)
+            {
+                Console.WriteLine("\n========================================================");
+                Console.WriteLine(">>> PENGEMBALIAN KENDARAAN BERHASIL DIPROSES <<<");
+                Console.WriteLine($"Kendaraan      : {licensePlate.ToUpper()}");
+                Console.WriteLine($"Status Armada  : Tersedia kembali di garasi");
+                Console.WriteLine($"Keterlambatan  : {(hoursLate > 0 ? $"{hoursLate} jam (Dikenakan denda)" : "Tepat waktu (Tanpa denda)")}");
+                Console.WriteLine("========================================================");
+                Console.WriteLine("\n--- INVOICE TERKINI TRANSAKSI ---");
+                transaction.Print();
+            }
+            else
+            {
+                Console.WriteLine($"Gagal memproses pengembalian kendaraan \"{licensePlate}\". Pastikan plat nomor sesuai dan belum dikembalikan.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Error]: {ex.Message}");
+        }
+    }
+
+    //Laporan 
     public decimal CalculateTotalRevenue()
     {
         decimal total = 0;
@@ -234,7 +417,6 @@ public class RentalSystem : IPrintable
         return completed;
     }
 
-    // Implementasi IPrintable untuk cetak laporan ringkasan sistem
     public void Print()
     {
         Console.WriteLine("====================================================================");

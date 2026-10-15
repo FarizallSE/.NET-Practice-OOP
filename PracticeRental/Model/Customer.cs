@@ -10,11 +10,11 @@ public class Customer
     {
         // Validasi input
         if (idCustomer <= 0)
-            throw new ArgumentException("ID pelanggan harus lebih dari 0", nameof(idCustomer));
+            throw new Exception("ID pelanggan harus lebih dari 0.");
         if (string.IsNullOrWhiteSpace(name))
-            throw new ArgumentException("Nama tidak boleh kosong", nameof(name));
+            throw new Exception("Nama tidak boleh kosong.");
         if (string.IsNullOrWhiteSpace(contactNumber))
-            throw new ArgumentException("Nomor telepon tidak boleh kosong", nameof(contactNumber));
+            throw new Exception("Nomor telepon tidak boleh kosong.");
 
         IdCustomer = idCustomer;
         Name = name;

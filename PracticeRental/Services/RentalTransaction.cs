@@ -18,7 +18,7 @@ public class RentalTransaction : IPrintable
     public RentalTransaction(int idTransaction, Customer customer)
     {
         IdTransaction = idTransaction;
-        Customer = customer ?? throw new ArgumentNullException(nameof(customer));
+        Customer = customer ?? throw new Exception("Pelanggan tidak boleh null.");
     }
 
     public bool AddItem(RentalItem item)

@@ -29,9 +29,9 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
 
     public RentalItem(Vehicle vehicle, int durationDays)
     {
-        TargetVehicle = vehicle ?? throw new ArgumentNullException(nameof(vehicle));
+        TargetVehicle = vehicle ?? throw new Exception("Kendaraan tidak boleh null.");
         if (durationDays <= 0)
-            throw new ArgumentException("Durasi sewa minimal 1 hari", nameof(durationDays));
+            throw new Exception("Durasi sewa minimal 1 hari.");
 
         DurationDays = durationDays;
         HoursLate = 0;
@@ -51,7 +51,7 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
     public void SetHoursLate(int hoursLate)
     {
         if (hoursLate < 0)
-            throw new ArgumentException("Jam terlambat tidak boleh negatif", nameof(hoursLate));
+            throw new Exception("Jam terlambat tidak boleh negatif.");
 
         HoursLate = hoursLate;
         IsReturned = true;
