@@ -6,7 +6,7 @@ namespace PracticeRental;
 
 class Program
 {
-    private RentalSystem _system = new();
+    private RentalSystem system = new();
 
     static void Main(string[] args)
     {
@@ -16,7 +16,7 @@ class Program
 
     void Run()
     {
-        _system.SeedData();
+        system.SeedData();
 
         while (true)
         {
@@ -35,23 +35,28 @@ class Program
             switch (choice)
             {
                 case "1":
-                    _system.ShowCatalog(true);
+                    system.ShowCatalog(true);
                     break;
                 case "2":
-                    CreateNewTransaction();
+                    var newTransaction = CreateNewTransaction();
+                    if (newTransaction != null)
+                        PrintTransaction(newTransaction);
                     break;
                 case "3":
-                    ProcessReturn();
+                    var returnedTransaction = ProcessReturn();
+                    if (returnedTransaction != null)
+                        PrintTransaction(returnedTransaction);
                     break;
                 case "4":
-                    AddNewCustomer();
+                    var customerAdded = AddNewCustomer();
+                    PrintAddCustomerResult(customerAdded);
                     break;
                 case "5":
-                    _system.AddVehicle();
+                    system.AddVehicle();
                     break;
                 case "6":
-                    _system.PrintAllTransactions();
-                    _system.Print();
+                    system.PrintAllTransactions();
+                    system.Print();
                     break;
                 case "0":
                     return;
@@ -61,43 +66,28 @@ class Program
         }
     }
 
-    void CreateNewTransaction()
+    RentalTransaction? CreateNewTransaction()
     {
-        _system.ShowCatalog(true);
+        system.ShowCatalog(true);
 
         var customer = GetOrCreateCustomer();
-        if (customer == null) return;
+        if (customer == null) return null;
 
-        var transaction = _system.CreateTransaction(customer);
-        if (transaction == null)
-        {
-            Console.WriteLine("Gagal membuat transaksi.");
-            return;
-        }
+        var transaction = system.CreateTransaction(customer);
+        if (transaction == null) return null;
 
         while (true)
         {
             Console.Write("\nPlat Nomor: ");
             var plate = Console.ReadLine()!;
-            var vehicle = _system.FindVehicle(plate);
+            var vehicle = system.FindVehicle(plate);
 
-            if (vehicle == null)
-            {
-                Console.WriteLine("Kendaraan tidak ditemukan.");
+            if (vehicle == null || !vehicle.IsAvailable)
                 continue;
-            }
-            if (!vehicle.IsAvailable)
-            {
-                Console.WriteLine("Kendaraan sedang disewa.");
-                continue;
-            }
 
             Console.Write("Durasi (hari): ");
             if (!int.TryParse(Console.ReadLine(), out int days) || days <= 0)
-            {
-                Console.WriteLine("Durasi tidak valid.");
                 continue;
-            }
 
             var item = new RentalItem(vehicle, days);
 
@@ -112,39 +102,22 @@ class Program
                 bike.SetIsExtraHelmet(Console.ReadLine()!.Trim().ToLower() == "y");
             }
 
-            if (transaction.AddItem(item))
-                Console.WriteLine("Item ditambahkan.");
-            else
-                Console.WriteLine("Gagal menambahkan item.");
+            transaction.AddItem(item);
 
             Console.Write("Tambah item lagi? (y/n): ");
             if (Console.ReadLine()!.Trim().ToLower() != "y") break;
         }
 
-        transaction.Print();
+        return transaction;
     }
 
-    void ProcessReturn()
+    RentalTransaction? ProcessReturn()
     {
         Console.Write("ID Transaksi: ");
-        if (!int.TryParse(Console.ReadLine(), out int id))
-        {
-            Console.WriteLine("ID tidak valid.");
-            return;
-        }
+        if (!int.TryParse(Console.ReadLine(), out int id)) return null;
 
-        var transaction = _system.FindTransaction(id);
-        if (transaction == null)
-        {
-            Console.WriteLine("Transaksi tidak ditemukan.");
-            return;
-        }
-
-        if (transaction.IsCompleted)
-        {
-            Console.WriteLine("Transaksi sudah selesai.");
-            return;
-        }
+        var transaction = system.FindTransaction(id);
+        if (transaction == null || transaction.IsCompleted) return null;
 
         Console.WriteLine("\nItem dalam transaksi:");
         foreach (var item in transaction.GetItems())
@@ -156,67 +129,37 @@ class Program
         var plate = Console.ReadLine()!;
 
         Console.Write("Jam terlambat: ");
-        if (!int.TryParse(Console.ReadLine(), out int hoursLate) || hoursLate < 0)
-        {
-            Console.WriteLine("Input tidak valid.");
-            return;
-        }
+        if (!int.TryParse(Console.ReadLine(), out int hoursLate) || hoursLate < 0) return null;
 
-        if (transaction.ProcessReturn(plate, hoursLate))
-        {
-            Console.WriteLine("Pengembalian berhasil diproses.");
-            transaction.Print();
-        }
-        else
-        {
-            Console.WriteLine("Kendaraan tidak ditemukan dalam transaksi ini.");
-        }
+        transaction.ProcessReturn(plate, hoursLate);
+        return transaction;
     }
 
-    void AddNewCustomer()
+    bool AddNewCustomer()
     {
         Console.Write("ID Pelanggan: ");
-        if (!int.TryParse(Console.ReadLine(), out int id) || id <= 0)
-        {
-            Console.WriteLine("ID tidak valid.");
-            return;
-        }
+        if (!int.TryParse(Console.ReadLine(), out int id) || id <= 0) return false;
 
         Console.Write("Nama: ");
         var name = Console.ReadLine()!;
-        if (string.IsNullOrWhiteSpace(name))
-        {
-            Console.WriteLine("Nama tidak boleh kosong.");
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(name)) return false;
 
         Console.Write("Nomor Kontak: ");
         var contact = Console.ReadLine()!;
-        if (string.IsNullOrWhiteSpace(contact))
-        {
-            Console.WriteLine("Kontak tidak boleh kosong.");
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(contact)) return false;
 
-        if (_system.AddCustomer(new Customer(id, name, contact)))
-            Console.WriteLine("Pelanggan berhasil ditambahkan.");
-        else
-            Console.WriteLine("Gagal menambahkan pelanggan (ID sudah terdaftar).");
+        return system.AddCustomer(new Customer(id, name, contact));
     }
 
     Customer? GetOrCreateCustomer()
     {
         Console.Write("ID Pelanggan: ");
-        if (!int.TryParse(Console.ReadLine(), out int id))
-        {
-            Console.WriteLine("ID tidak valid.");
-            return null;
-        }
+        if (!int.TryParse(Console.ReadLine(), out int id)) return null;
 
-        var customer = _system.FindCustomer(id);
+        var customer = system.FindCustomer(id);
         if (customer != null) return customer;
 
-        Console.WriteLine("Pelanggan tidak ditemukan. Buat baru? (y/n): ");
+        Console.Write("Buat pelanggan baru? (y/n): ");
         if (Console.ReadLine()!.Trim().ToLower() != "y") return null;
 
         Console.Write("Nama: ");
@@ -224,13 +167,27 @@ class Program
         Console.Write("Nomor Kontak: ");
         var contact = Console.ReadLine()!;
 
-        if (_system.AddCustomer(new Customer(id, name, contact)))
-        {
-            Console.WriteLine("Pelanggan baru ditambahkan.");
-            return _system.FindCustomer(id);
-        }
+        if (system.AddCustomer(new Customer(id, name, contact)))
+            return system.FindCustomer(id);
 
-        Console.WriteLine("Gagal menambahkan pelanggan.");
         return null;
+    }
+
+    void PrintTransaction(RentalTransaction transaction)
+    {
+        transaction.Print();
+    }
+
+    void PrintAddCustomerResult(bool success)
+    {
+        Console.WriteLine(success ? "Pelanggan berhasil ditambahkan." : "Gagal menambahkan pelanggan.");
+    }
+
+    void PrintCustomerResult(Customer? customer)
+    {
+        if (customer != null)
+            Console.WriteLine($"Pelanggan: {customer}");
+        else
+            Console.WriteLine("Pelanggan tidak ditemukan.");
     }
 }
