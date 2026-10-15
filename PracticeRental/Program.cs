@@ -36,7 +36,7 @@ class Program
             switch (choice)
             {
                 case "1":
-                    _system.ShowCatalog();
+                    system.ShowCatalog();
                     break;
                 case "2":
                     var newTransaction = CreateNewTransaction();
@@ -128,34 +128,42 @@ class Program
 
     RentalTransaction? ProcessReturn()
     {
-        _system.ProcessReturn();
+        Console.Write("ID Transaksi: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return null;
+
+        var transaction = system.FindTransaction(id);
+        if (transaction == null || transaction.IsCompleted) return null;
+
+        Console.WriteLine("\nItem dalam transaksi:");
+        foreach (var item in transaction.GetItems())
+        {
+            Console.WriteLine($"  {item.TargetVehicle.LicensePlate} - {item.TargetVehicle.Brand} ({(item.IsReturned ? "Sudah kembali" : "Belum kembali")})");
+        }
+
+        Console.Write("\nPlat Nomor yang dikembalikan: ");
+        var plate = Console.ReadLine()!;
+
+        Console.Write("Jam terlambat: ");
+        if (!int.TryParse(Console.ReadLine(), out int hoursLate) || hoursLate < 0) return null;
+
+        transaction.ProcessReturn(plate, hoursLate);
+        return transaction;
     }
 
     bool AddNewCustomer()
     {
         Console.Write("ID Pelanggan: ");
-        if (!int.TryParse(Console.ReadLine(), out int id))
-        {
-            Console.WriteLine("ID tidak valid.");
-            return;
-        }
+        if (!int.TryParse(Console.ReadLine(), out int id) || id <= 0) return false;
 
         Console.Write("Nama: ");
         var name = Console.ReadLine()!;
+        if (string.IsNullOrWhiteSpace(name)) return false;
+
         Console.Write("Nomor Kontak: ");
         var contact = Console.ReadLine()!;
+        if (string.IsNullOrWhiteSpace(contact)) return false;
 
-        try
-        {
-            if (_system.AddCustomer(new Customer(id, name, contact)))
-                Console.WriteLine("Pelanggan berhasil ditambahkan.");
-            else
-                Console.WriteLine("Gagal menambahkan pelanggan (ID sudah terdaftar).");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Error]: {ex.Message}");
-        }
+        return system.AddCustomer(new Customer(id, name, contact));
     }
 
     Customer? GetOrCreateCustomer()
