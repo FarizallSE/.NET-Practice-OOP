@@ -19,12 +19,7 @@ public class RentalSystem : IPrintable
 
     private readonly Customer[] customers = new Customer[MaxCustomer];
     private int customerCount;
-
-    // Property helper
-    public int CatalogCount => catalogCount;
-    public int VehicleCount() => catalogCount; 
-    public int TransactionCount => transactionCount;
-    public int CustomerCount => customerCount;
+    
     private bool CanCreateTransaction => transactionCount < MaxTransaction;
 
     //Kendaraan 
@@ -44,30 +39,6 @@ public class RentalSystem : IPrintable
                 return catalog[i];
         }
         return null;
-    }
-
-    public Vehicle[] GetAvailableVehicles()
-    {
-        int count = 0;
-        for (int i = 0; i < catalogCount; i++)
-        {
-            if (catalog[i].IsAvailable) count++;
-        }
-
-        Vehicle[] result = new Vehicle[count];
-        int index = 0;
-        for (int i = 0; i < catalogCount; i++)
-        {
-            if (catalog[i].IsAvailable) result[index++] = catalog[i];
-        }
-        return result;
-    }
-
-    public Vehicle[] GetAllVehicles()
-    {
-        Vehicle[] result = new Vehicle[catalogCount];
-        Array.Copy(catalog, result, catalogCount);
-        return result;
     }
 
     public void ShowCatalog(bool availableOnly = false)
@@ -185,13 +156,6 @@ public class RentalSystem : IPrintable
         return true;
     }
 
-    public Customer[] GetAllCustomers()
-    {
-        Customer[] result = new Customer[customerCount];
-        Array.Copy(customers, result, customerCount);
-        return result;
-    }
-
     //Transaksi
     public RentalTransaction? CreateTransaction(Customer customer)
     {
@@ -246,153 +210,6 @@ public class RentalSystem : IPrintable
             }
         }
         return null;
-    }
-
-    public bool ProcessReturn(int idTransaction, string licensePlate, int hoursLate)
-    {
-        var trx = FindTransaction(idTransaction);
-        if (trx == null) return false;
-        return trx.ProcessReturn(licensePlate, hoursLate);
-    }
-
-    public bool ProcessReturn(string licensePlate, int hoursLate)
-    {
-        var trx = FindActiveTransactionByVehicle(licensePlate);
-        if (trx == null) return false;
-        return trx.ProcessReturn(licensePlate, hoursLate);
-    }
-
-    public void ProcessReturnVehicle() => ProcessReturn();
-
-    public void ProcessReturn()
-    {
-        Console.WriteLine("\n--- Proses Pengembalian Kendaraan ---");
-        try
-        {
-            Console.WriteLine("Cari transaksi berdasarkan:");
-            Console.WriteLine("1. ID Transaksi");
-            Console.WriteLine("2. Nomor Kendaraan (Plat Nomor)");
-            Console.Write("Pilih metode pencarian (1/2): ");
-            string? searchChoice = Console.ReadLine()?.Trim();
-
-            RentalTransaction? transaction = null;
-            string licensePlate = string.Empty;
-
-            if (searchChoice == "1")
-            {
-                Console.Write("Masukkan ID Transaksi: ");
-                if (!int.TryParse(Console.ReadLine(), out int idTransaction))
-                {
-                    throw new Exception("ID Transaksi harus berupa angka.");
-                }
-
-                transaction = FindTransaction(idTransaction);
-                if (transaction == null)
-                {
-                    throw new Exception($"Transaksi dengan ID {idTransaction} tidak ditemukan.");
-                }
-
-                if (transaction.IsCompleted)
-                {
-                    Console.WriteLine($"Transaksi #{transaction.IdTransaction:D4} sudah selesai (semua kendaraan telah dikembalikan).");
-                    return;
-                }
-
-                var items = transaction.GetItems();
-                var unreturnedItems = new List<RentalItem>();
-                foreach (var item in items)
-                {
-                    if (!item.IsReturned)
-                    {
-                        unreturnedItems.Add(item);
-                    }
-                }
-
-                if (unreturnedItems.Count == 0)
-                {
-                    Console.WriteLine("Tidak ada kendaraan yang perlu dikembalikan pada transaksi ini.");
-                    return;
-                }
-
-                Console.WriteLine($"\nTransaksi #{transaction.IdTransaction:D4} - Pelanggan: {transaction.Customer.Name}");
-                Console.WriteLine("Daftar kendaraan yang sedang disewa:");
-                for (int i = 0; i < unreturnedItems.Count; i++)
-                {
-                    var v = unreturnedItems[i].TargetVehicle;
-                    Console.WriteLine($"  {i + 1}. [{v.GetTypeVehicle()}] {v.Brand} - Plat: {v.LicensePlate}");
-                }
-
-                if (unreturnedItems.Count == 1)
-                {
-                    licensePlate = unreturnedItems[0].TargetVehicle.LicensePlate;
-                    Console.WriteLine($"Kendaraan yang akan diproses: {licensePlate}");
-                }
-                else
-                {
-                    Console.Write("Masukkan nomor plat kendaraan yang ingin dikembalikan: ");
-                    licensePlate = Console.ReadLine()?.Trim()!;
-                }
-            }
-            else if (searchChoice == "2")
-            {
-                Console.Write("Masukkan Nomor Plat Kendaraan: ");
-                licensePlate = Console.ReadLine()?.Trim()!;
-
-                if (string.IsNullOrWhiteSpace(licensePlate))
-                {
-                    throw new Exception("Plat nomor tidak boleh kosong.");
-                }
-
-                transaction = FindActiveTransactionByVehicle(licensePlate);
-                if (transaction == null)
-                {
-                    var vehicle = FindVehicle(licensePlate);
-                    if (vehicle == null)
-                    {
-                        throw new Exception($"Kendaraan dengan plat \"{licensePlate}\" tidak terdaftar di sistem.");
-                    }
-                    if (vehicle.IsAvailable)
-                    {
-                        Console.WriteLine($"Kendaraan dengan plat \"{licensePlate}\" saat ini tidak sedang disewa (tersedia di garasi).");
-                        return;
-                    }
-                    throw new Exception($"Tidak ditemukan transaksi aktif untuk kendaraan dengan plat \"{licensePlate}\".");
-                }
-
-                Console.WriteLine($"\nDitemukan Transaksi #{transaction.IdTransaction:D4} atas nama {transaction.Customer.Name}.");
-            }
-            else
-            {
-                throw new Exception("Pilihan metode pencarian tidak valid (harus 1 atau 2).");
-            }
-
-            Console.Write("Masukkan keterlambatan pengembalian (dalam jam, ketik 0 jika tepat waktu): ");
-            if (!int.TryParse(Console.ReadLine(), out int hoursLate))
-            {
-                throw new Exception("Keterlambatan harus berupa angka jam.");
-            }
-
-            bool success = transaction.ProcessReturn(licensePlate, hoursLate);
-            if (success)
-            {
-                Console.WriteLine("\n========================================================");
-                Console.WriteLine(">>> PENGEMBALIAN KENDARAAN BERHASIL DIPROSES <<<");
-                Console.WriteLine($"Kendaraan      : {licensePlate.ToUpper()}");
-                Console.WriteLine($"Status Armada  : Tersedia kembali di garasi");
-                Console.WriteLine($"Keterlambatan  : {(hoursLate > 0 ? $"{hoursLate} jam (Dikenakan denda)" : "Tepat waktu (Tanpa denda)")}");
-                Console.WriteLine("========================================================");
-                Console.WriteLine("\n--- INVOICE TERKINI TRANSAKSI ---");
-                transaction.Print();
-            }
-            else
-            {
-                Console.WriteLine($"Gagal memproses pengembalian kendaraan \"{licensePlate}\". Pastikan plat nomor sesuai dan belum dikembalikan.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Error]: {ex.Message}");
-        }
     }
 
     //Laporan 

@@ -32,16 +32,6 @@ public abstract class Vehicle
         Status = status;
     }
 
-    public void SetDailyRate(decimal dailyRate)
-    {
-        if (dailyRate <= 0)
-        {
-            throw new Exception("Tarif harian harus lebih dari 0.");
-        }
-
-        DailyRate = dailyRate;
-    }
-
     public decimal CalculateCost(int rentalDays)
     {
         return rentalDays * DailyRate;

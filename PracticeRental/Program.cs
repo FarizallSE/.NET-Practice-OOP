@@ -225,14 +225,6 @@ class Program
         Console.WriteLine(success ? "Pelanggan berhasil ditambahkan." : "Gagal menambahkan pelanggan.");
     }
 
-    void PrintCustomerResult(Customer? customer)
-    {
-        if (customer != null)
-            Console.WriteLine($"Pelanggan: {customer}");
-        else
-            Console.WriteLine("Pelanggan tidak ditemukan.");
-    }
-
     void PrintRevenueByType(decimal[] revenue)
     {
         string[] typeNames = { "Car", "Bus", "Bike" };

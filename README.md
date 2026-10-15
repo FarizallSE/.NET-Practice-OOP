@@ -26,4 +26,4 @@ Usaha rental kendaraan menyewakan mobil, motor, dan bus. Satu pelanggan bisa men
 - **Fitur tambahan**: Laporan pendapatan per jenis kendaraan
 
 
-![Class Diagram](img/OOP-Practice1.png)
+![Class Diagram](img/OOP-Practice-Final.png)
