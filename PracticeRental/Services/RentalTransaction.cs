@@ -6,7 +6,7 @@ namespace PracticeRental.Services;
 
 public class RentalTransaction : IPrintable
 {
-    public const int MaxItem = 20;
+    private const int MaxItem = 20;
 
     public int IdTransaction { get; }
     public Customer Customer { get; }

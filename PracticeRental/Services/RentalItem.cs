@@ -10,15 +10,15 @@ namespace PracticeRental.Services;
 public class RentalItem : IPrintable, IDicountable, IPenalizable
 {
     // Aturan diskon
-    public const int MinDaysForDiscount = 7;
-    public const decimal DiscountRate = 0.10m;
+    private const int MinDaysForDiscount = 7;
+    private const decimal DiscountRate = 0.10m;
 
     // Aturan denda 
-    public const decimal PenaltyRatePerHour = 0.10m;
-    public const int MaxPenaltyHours = 10;
+    private const decimal PenaltyRatePerHour = 0.10m;
+    private const int MaxPenaltyHours = 10;
 
     public Vehicle TargetVehicle { get; }
-    public int DurationDays { get; }
+    private int DurationDays { get; }
     public int HoursLate { get; private set; }
     public bool IsReturned { get; private set; }
 

@@ -6,9 +6,9 @@ namespace PracticeRental.Services;
 
 public class RentalSystem : IPrintable
 {
-    public const int MaxFleet = 100;
-    public const int MaxTransaction = 500;
-    public const int MaxCustomer = 500;
+    private const int MaxFleet = 100;
+    private const int MaxTransaction = 500;
+    private const int MaxCustomer = 500;
 
     // Penyimpanan data internal
     private readonly Vehicle[] catalog = new Vehicle[MaxFleet];
@@ -25,7 +25,7 @@ public class RentalSystem : IPrintable
     public int VehicleCount() => catalogCount; 
     public int TransactionCount => transactionCount;
     public int CustomerCount => customerCount;
-    public bool CanCreateTransaction => transactionCount < MaxTransaction;
+    private bool CanCreateTransaction => transactionCount < MaxTransaction;
 
     //Kendaraan 
     public bool AddVehicle(Vehicle vehicle)
