@@ -15,7 +15,7 @@ public class RentalItem : IPrintable, IDicountable, IPenalizable
 
     // Aturan denda 
     public const decimal PenaltyRatePerHour = 0.10m;
-    public const int MaxPenaltyHours = 24;
+    public const int MaxPenaltyHours = 10;
 
     public Vehicle TargetVehicle { get; }
     public int DurationDays { get; }

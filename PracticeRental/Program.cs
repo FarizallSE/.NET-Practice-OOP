@@ -1,4 +1,4 @@
-﻿using PracticeRental.Model;
+using PracticeRental.Model;
 using PracticeRental.Model.Vehicles;
 using PracticeRental.Services;
 
@@ -36,7 +36,7 @@ class Program
             switch (choice)
             {
                 case "1":
-                    system.ShowCatalog(true);
+                    _system.ShowCatalog();
                     break;
                 case "2":
                     var newTransaction = CreateNewTransaction();
@@ -94,20 +94,30 @@ class Program
             if (!int.TryParse(Console.ReadLine(), out int days) || days <= 0)
                 continue;
 
-            var item = new RentalItem(vehicle, days);
-
-            if (vehicle is Car car)
+            try
             {
-                Console.Write("Pakai sopir? (y/n): ");
-                car.SetIsUseDrive(Console.ReadLine()!.Trim().ToLower() == "y");
-            }
-            else if (vehicle is Bike bike)
-            {
-                Console.Write("Extra helm? (y/n): ");
-                bike.SetIsExtraHelmet(Console.ReadLine()!.Trim().ToLower() == "y");
-            }
+                var item = new RentalItem(vehicle, days);
 
-            transaction.AddItem(item);
+                if (vehicle is Car car)
+                {
+                    Console.Write("Pakai sopir? (y/n): ");
+                    car.SetIsUseDrive(Console.ReadLine()!.Trim().ToLower() == "y");
+                }
+                else if (vehicle is Bike bike)
+                {
+                    Console.Write("Extra helm? (y/n): ");
+                    bike.SetIsExtraHelmet(Console.ReadLine()!.Trim().ToLower() == "y");
+                }
+
+                if (transaction.AddItem(item))
+                    Console.WriteLine("Item ditambahkan.");
+                else
+                    Console.WriteLine("Gagal menambahkan item.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error]: {ex.Message}");
+            }
 
             Console.Write("Tambah item lagi? (y/n): ");
             if (Console.ReadLine()!.Trim().ToLower() != "y") break;
@@ -118,42 +128,34 @@ class Program
 
     RentalTransaction? ProcessReturn()
     {
-        Console.Write("ID Transaksi: ");
-        if (!int.TryParse(Console.ReadLine(), out int id)) return null;
-
-        var transaction = system.FindTransaction(id);
-        if (transaction == null || transaction.IsCompleted) return null;
-
-        Console.WriteLine("\nItem dalam transaksi:");
-        foreach (var item in transaction.GetItems())
-        {
-            Console.WriteLine($"  {item.TargetVehicle.LicensePlate} - {item.TargetVehicle.Brand} ({(item.IsReturned ? "Sudah kembali" : "Belum kembali")})");
-        }
-
-        Console.Write("\nPlat Nomor yang dikembalikan: ");
-        var plate = Console.ReadLine()!;
-
-        Console.Write("Jam terlambat: ");
-        if (!int.TryParse(Console.ReadLine(), out int hoursLate) || hoursLate < 0) return null;
-
-        transaction.ProcessReturn(plate, hoursLate);
-        return transaction;
+        _system.ProcessReturn();
     }
 
     bool AddNewCustomer()
     {
         Console.Write("ID Pelanggan: ");
-        if (!int.TryParse(Console.ReadLine(), out int id) || id <= 0) return false;
+        if (!int.TryParse(Console.ReadLine(), out int id))
+        {
+            Console.WriteLine("ID tidak valid.");
+            return;
+        }
 
         Console.Write("Nama: ");
         var name = Console.ReadLine()!;
-        if (string.IsNullOrWhiteSpace(name)) return false;
-
         Console.Write("Nomor Kontak: ");
         var contact = Console.ReadLine()!;
-        if (string.IsNullOrWhiteSpace(contact)) return false;
 
-        return system.AddCustomer(new Customer(id, name, contact));
+        try
+        {
+            if (_system.AddCustomer(new Customer(id, name, contact)))
+                Console.WriteLine("Pelanggan berhasil ditambahkan.");
+            else
+                Console.WriteLine("Gagal menambahkan pelanggan (ID sudah terdaftar).");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Error]: {ex.Message}");
+        }
     }
 
     Customer? GetOrCreateCustomer()
