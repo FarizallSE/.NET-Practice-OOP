@@ -117,9 +117,9 @@ public class RentalTransaction
         Console.WriteLine("-------------------------------------------------------");
 
         int subtotal = 0;
-        for (int i = 0; i < _count; i++)
+        int i = 1;
+        foreach (var v in _vehicles.Take(_count))
         {
-            Vehicle v = _vehicles[i];
             if (v == null) continue;
 
             int itemCost = v.GetCost(RentalDays);
@@ -139,7 +139,7 @@ public class RentalTransaction
                 driverInfo = " (Termasuk Helm Tambahan)";
             }
 
-            Console.WriteLine($"{i + 1}. {v.GetType().Name,-10} | {v.PlateNumber} - {v.Brand} | Rp {itemCost,10:N0}{driverInfo}");
+            Console.WriteLine($"{i++}. {v.GetType().Name,-10} | {v.PlateNumber} - {v.Brand} | Rp {itemCost,10:N0}{driverInfo}");
         }
 
         int discount = CalculateDiscount();

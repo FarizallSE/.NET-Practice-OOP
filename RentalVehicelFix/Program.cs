@@ -164,9 +164,10 @@ class Program
         }
 
         Console.WriteLine("Daftar Transaksi:");
-        for (int i = 0; i < transactionData.Count; i++)
+        int i = 1;
+        foreach (var t in transactionData)
         {
-            Console.WriteLine($"{i + 1}. Transaksi Pelanggan: {transactionData[i].customer?.Name} ({transactionData[i].RentalDays} hari)");
+            Console.WriteLine($"{i++}. Transaksi Pelanggan: {t.customer?.Name} ({t.RentalDays} hari)");
         }
 
         Console.Write("Pilih nomor transaksi yang ingin dikembalikan: ");
@@ -232,9 +233,10 @@ class Program
         if (customerCount > 0)
         {
             Console.WriteLine("\nPilih Pelanggan Terdaftar:");
-            for (int i = 0; i < customerCount; i++)
+            int i = 1;
+            foreach (var c in customerData.Take(customerCount))
             {
-                Console.WriteLine($"{i + 1}. [{customerData[i].CustomerID}] {customerData[i].Name} ({customerData[i].PhoneNumber})");
+                Console.WriteLine($"{i++}. [{c.CustomerID}] {c.Name} ({c.PhoneNumber})");
             }
             Console.Write("Pilih nomor pelanggan (atau ketik 0 untuk buat baru): ");
             if (int.TryParse(Console.ReadLine(), out int sel) && sel >= 1 && sel <= customerCount)

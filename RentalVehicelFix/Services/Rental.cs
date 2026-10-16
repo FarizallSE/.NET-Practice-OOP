@@ -17,7 +17,9 @@ public class Rental
     {
         _vehicleRepo = new Repository<Vehicle>();
         foreach (var v in initialFleet)
+        {
             _vehicleRepo.Add(v);
+        }
     }
 
     public bool IsBlacklisted(string customerID) => _blacklist.Contains(customerID);
