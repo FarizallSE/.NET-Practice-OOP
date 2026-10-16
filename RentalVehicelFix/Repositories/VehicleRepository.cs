@@ -13,9 +13,9 @@ public class Repository<T> where T : Vehicle
         _byPlate[item.PlateNumber] = item;
     }
 
-    public IReadOnlyList<T> GetAll() => _items;
+    public List<T> GetAll() => _items;
 
-    public T? FindByPlate(string plateNumber)
+    public T FindByPlate(string plateNumber)
     {
         if (string.IsNullOrWhiteSpace(plateNumber)) return null;
         return _byPlate.TryGetValue(plateNumber, out var item) ? item : null;

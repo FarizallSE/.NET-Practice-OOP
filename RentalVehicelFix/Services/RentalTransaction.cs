@@ -10,7 +10,7 @@ public class RentalTransaction
     public Customer customer { get; private set; }
     public Customer Customer => customer;
 
-    private Vehicle[] _vehicles = new Vehicle[5];
+    private List<Vehicle> _vehicles = new List<Vehicle>();
     private int _count = 0;
 
     private int _rentalDays;
@@ -49,7 +49,7 @@ public class RentalTransaction
         }
 
         vehicle.Rent();
-        _vehicles[_count] = vehicle;
+        _vehicles.Add(vehicle);
         _count++;
         return true;
     }
@@ -70,12 +70,10 @@ public class RentalTransaction
     public int CalculateDiscount()
     {
         int subtotal = 0;
-        for (int i = 0; i < _count; i++)
+
+        foreach (var item in _vehicles)
         {
-            if (_vehicles[i] != null)
-            {
-                subtotal += _vehicles[i].GetCost(RentalDays);
-            }
+            subtotal += item.GetCost(RentalDays);
         }
 
         if (RentalDays >= 7 || _count >= 3 || RentalDays >= 5)
@@ -90,14 +88,14 @@ public class RentalTransaction
     {
         int subtotal = 0;
         int totalFine = 0;
-
-        for (int i = 0; i < _count; i++)
+        
+        foreach (var item in _vehicles) 
         {
-            if (_vehicles[i] != null)
+            if (item != null)
             {
-                subtotal += _vehicles[i].GetCost(RentalDays);
-                totalFine += _vehicles[i].CalculateFine(lateHours);
-                _vehicles[i].Return();
+                subtotal += item.GetCost(RentalDays);
+                totalFine += item.CalculateFine(lateHours);
+                item.Return();
             }
         }
 
@@ -138,7 +136,6 @@ public class RentalTransaction
             {
                 driverInfo = " (Termasuk Helm Tambahan)";
             }
-
             Console.WriteLine($"{i++}. {v.GetType().Name,-10} | {v.PlateNumber} - {v.Brand} | Rp {itemCost,10:N0}{driverInfo}");
         }
 
