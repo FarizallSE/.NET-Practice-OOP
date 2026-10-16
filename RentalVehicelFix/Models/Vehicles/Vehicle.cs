@@ -25,7 +25,7 @@ public abstract class Vehicle
         {
             if (value <= 0)
             {
-                throw new Exception("Cannot Assign Daily Rate To Be zero!");
+                throw new ArgumentException("Tarif harian harus lebih dari 0.", nameof(value));
             }
             _dailyRate = value;
         }

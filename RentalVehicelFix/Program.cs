@@ -1,3 +1,4 @@
+using RentalVehicelFix.Exceptions;
 using RentalVehicelFix.Models;
 using RentalVehicelFix.Models.Vehicles;
 using RentalVehicelFix.Services;
@@ -6,7 +7,7 @@ namespace RentalVehicelFix;
 
 class Program
 {
-    private static Vehicle[] fleetData = new Vehicle[]
+    private static List<Vehicle> fleetData = new()
     {
         new Motorcycle(1, "B 1111 MOT", "Honda Vario", 2022, 80000, extraHelmet: true),
         new Motorcycle(2, "B 2222 MOT", "Yamaha NMAX", 2023, 100000, extraHelmet: false),
@@ -18,8 +19,7 @@ class Program
     private static Customer[] customerData = new Customer[50];
     private static int customerCount = 0;
 
-    private static RentalTransaction[] transactionData = new RentalTransaction[100];
-    private static int transactionCount = 0;
+    private static List<RentalTransaction> transactionData = new();
 
     private static Rental rentalApp = new Rental(fleetData);
 
@@ -84,14 +84,29 @@ class Program
             return;
         }
 
-        Console.Write("\nDurasi Sewa (hari): ");
-        if (!int.TryParse(Console.ReadLine(), out int days) || days <= 0)
+        if (rentalApp.IsBlacklisted(customer.CustomerID))
         {
-            Console.WriteLine("Durasi sewa minimal 1 hari.");
+            Console.WriteLine($"[Error] Pelanggan {customer.Name} sedang dalam daftar hitam dan tidak dapat menyewa.");
             return;
         }
 
-        var trx = new RentalTransaction(customer, days);
+        Console.Write("\nDurasi Sewa (hari): ");
+        if (!int.TryParse(Console.ReadLine(), out int days))
+        {
+            Console.WriteLine("Durasi sewa harus angka.");
+            return;
+        }
+
+        RentalTransaction trx;
+        try
+        {
+            trx = new RentalTransaction(customer, days);
+        }
+        catch (InvalidRentalDurationException ex)
+        {
+            Console.WriteLine($"[Error] {ex.Message}");
+            return;
+        }
 
         while (true)
         {
@@ -102,12 +117,10 @@ class Program
             if (vehicle == null)
             {
                 Console.WriteLine("Kendaraan dengan plat tersebut tidak ditemukan.");
+                continue;
             }
-            else if (vehicle.Status == "Renting")
-            {
-                Console.WriteLine($"Kendaraan {vehicle.PlateNumber} sedang tidak tersedia.");
-            }
-            else
+
+            try
             {
                 bool withDriver = false;
                 if (vehicle is Car || vehicle is Bus)
@@ -126,6 +139,10 @@ class Program
                     Console.WriteLine($"Kendaraan {vehicle.PlateNumber} berhasil ditambahkan ke transaksi.");
                 }
             }
+            catch (VehicleNotAvailableException ex)
+            {
+                Console.WriteLine($"[Error] {ex.Message}");
+            }
 
             Console.Write("Tambah kendaraan lagi? (y/n): ");
             if (Console.ReadLine()?.Trim().ToLower() != "y") break;
@@ -134,29 +151,26 @@ class Program
         trx.printInvoice();
         rentalApp.Record(trx);
 
-        if (transactionCount < transactionData.Length)
-        {
-            transactionData[transactionCount++] = trx;
-        }
+        transactionData.Add(trx);
     }
 
     static void ProcessReturn()
     {
         Console.WriteLine("\n--- Proses Pengembalian Kendaraan ---");
-        if (transactionCount == 0)
+        if (transactionData.Count == 0)
         {
             Console.WriteLine("Belum ada transaksi.");
             return;
         }
 
         Console.WriteLine("Daftar Transaksi:");
-        for (int i = 0; i < transactionCount; i++)
+        for (int i = 0; i < transactionData.Count; i++)
         {
             Console.WriteLine($"{i + 1}. Transaksi Pelanggan: {transactionData[i].customer?.Name} ({transactionData[i].RentalDays} hari)");
         }
 
         Console.Write("Pilih nomor transaksi yang ingin dikembalikan: ");
-        if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionCount)
+        if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionData.Count)
         {
             Console.WriteLine("Pilihan transaksi tidak valid.");
             return;
@@ -172,6 +186,13 @@ class Program
         }
 
         int totalCost = trx.Return(lateHours);
+
+        if (lateHours > 24)
+        {
+            rentalApp.AddToBlacklist(trx.customer!.CustomerID);
+            Console.WriteLine($"[Warning] Pelanggan {trx.customer.Name} masuk daftar hitam (terlambat > 24 jam).");
+        }
+
         Console.WriteLine("\n========================================================");
         Console.WriteLine(">>> PENGEMBALIAN KENDARAAN BERHASIL DIPROSES <<<");
         Console.WriteLine($"Keterlambatan : {(lateHours > 0 ? $"{lateHours} jam (Dikenakan denda)" : "Tepat waktu (Tanpa denda)")}");

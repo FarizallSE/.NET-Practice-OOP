@@ -1,49 +1,36 @@
 using RentalVehicelFix.Models.Vehicles;
+using RentalVehicelFix.Repositories;
 
 namespace RentalVehicelFix.Services;
 
 public class Rental
 {
-    private Vehicle[] _fleet;
-    private RentalTransaction[] _transactions;
-    private int _transactionCount;
+    private readonly Repository<Vehicle> _vehicleRepo;
+    private readonly List<RentalTransaction> _transactions = new();
+    private readonly HashSet<string> _blacklist = new();
 
-    public Rental() : this(new Vehicle[100])
+    public Rental() : this(new List<Vehicle>())
     {
     }
 
-    public Rental(Vehicle[] initialFleet, int maxTransactions = 100)
+    public Rental(List<Vehicle> initialFleet)
     {
-        _fleet = initialFleet ?? new Vehicle[0];
-        _transactions = new RentalTransaction[maxTransactions];
-        _transactionCount = 0;
+        _vehicleRepo = new Repository<Vehicle>();
+        foreach (var v in initialFleet)
+            _vehicleRepo.Add(v);
     }
 
-    public Vehicle? FindVehicle(string plateNumber)
-    {
-        if (string.IsNullOrWhiteSpace(plateNumber)) return null;
+    public bool IsBlacklisted(string customerID) => _blacklist.Contains(customerID);
 
-        for (int i = 0; i < _fleet.Length; i++)
-        {
-            if (_fleet[i] != null && string.Equals(_fleet[i].PlateNumber, plateNumber, StringComparison.OrdinalIgnoreCase))
-            {
-                return _fleet[i];
-            }
-        }
-        return null;
-    }
-    
+    public void AddToBlacklist(string customerID) => _blacklist.Add(customerID);
+
+    public Vehicle? FindVehicle(string plateNumber) => _vehicleRepo.FindByPlate(plateNumber);
+
     public void Record(RentalTransaction trx)
     {
         if (trx == null) return;
 
-        if (_transactionCount >= _transactions.Length)
-        {
-            Array.Resize(ref _transactions, _transactions.Length == 0 ? 10 : _transactions.Length * 2);
-        }
-
-        _transactions[_transactionCount] = trx;
-        _transactionCount++;
+        _transactions.Add(trx);
 
         string? customerName = trx.customer?.Name;
         if (!string.IsNullOrEmpty(customerName))
@@ -60,11 +47,11 @@ public class Rental
     {
         Console.WriteLine("\n--- DAFTAR KENDARAAN TERSEDIA (AVAILABLE) ---");
         bool anyAvailable = false;
-        for (int i = 0; i < _fleet.Length; i++)
+        foreach (var v in _vehicleRepo.GetAll())
         {
-            if (_fleet[i] != null && (_fleet[i].Status == "Available" || _fleet[i].Status != "Renting"))
+            if (v.Status == "Available")
             {
-                _fleet[i].Info();
+                v.Info();
                 anyAvailable = true;
             }
         }
@@ -80,9 +67,8 @@ public class Rental
         decimal[] revenue = new decimal[3];
         string[] typeNames = { "Car", "Bus", "Bike" };
 
-        for (int i = 0; i < _transactionCount; i++)
+        foreach (var trx in _transactions)
         {
-            RentalTransaction trx = _transactions[i];
             if (trx == null) continue;
 
             int count = 0;

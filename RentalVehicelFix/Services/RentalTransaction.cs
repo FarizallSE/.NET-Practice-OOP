@@ -1,3 +1,4 @@
+using RentalVehicelFix.Exceptions;
 using RentalVehicelFix.Interfaces;
 using RentalVehicelFix.Models;
 using RentalVehicelFix.Models.Vehicles;
@@ -18,9 +19,9 @@ public class RentalTransaction
         get => _rentalDays;
         set
         {
-            if (value < 1)
+            if (value < 1 || value > 30)
             {
-                throw new Exception("Rental Days must be greater than zero.");
+                throw new InvalidRentalDurationException("Lama sewa harus antara 1-30 hari.");
             }
             _rentalDays = value;
         }
@@ -44,8 +45,7 @@ public class RentalTransaction
 
         if (vehicle.Status == "Renting")
         {
-            Console.WriteLine($"[Gagal] Kendaraan {vehicle.PlateNumber} sedang tidak tersedia.");
-            return false;
+            throw new VehicleNotAvailableException($"Kendaraan {vehicle.PlateNumber} sedang disewa.");
         }
 
         vehicle.Rent();
