@@ -1,3 +1,4 @@
+using RentalVehicelFix.Exceptions;
 using RentalVehicelFix.Models;
 using RentalVehicelFix.Models.Vehicles;
 using RentalVehicelFix.Services;
@@ -6,7 +7,8 @@ namespace RentalVehicelFix;
 
 class Program
 {
-    private static Vehicle[] fleetData = new Vehicle[]
+    // private static Vehicle[] fleetData = new Vehicle[]
+    private static List<Vehicle> fleetData = new List<Vehicle>
     {
         new Motorcycle(1, "B 1111 MOT", "Honda Vario", 2022, 80000, extraHelmet: true),
         new Motorcycle(2, "B 2222 MOT", "Yamaha NMAX", 2023, 100000, extraHelmet: false),
@@ -41,38 +43,48 @@ class Program
             Console.WriteLine("2. Buat Transaksi Baru");
             Console.WriteLine("3. Proses Pengembalian");
             Console.WriteLine("4. Tambah Pelanggan");
-            Console.WriteLine("5. Laporan Pendapatan per Jenis Kendaraan");
-            Console.WriteLine("6. Kendaraan Paling Menguntungkan");
+            Console.WriteLine("5. Tambah Kendaraan Baru");
+            Console.WriteLine("6. Laporan Pendapatan per Jenis Kendaraan");
+            Console.WriteLine("7. Kendaraan Paling Menguntungkan");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();
 
-            switch (choice)
+            try
             {
-                case "1":
-                    rentalApp.printAvailable();
-                    break;
-                case "2":
-                    CreateNewTransaction();
-                    break;
-                case "3":
-                    ProcessReturn();
-                    break;
-                case "4":
-                    AddNewCustomer();
-                    break;
-                case "5":
-                case "7":
-                    rentalApp.PrintRevenueByType();
-                    break;
-                case "6":
-                    rentalApp.PrintMostProfitableVehicle();
-                    break;
-                case "0":
-                    return;
-                default:
-                    Console.WriteLine("Pilihan tidak valid.");
-                    break;
+                switch (choice)
+                {
+                    case "1":
+                        rentalApp.printAvailable();
+                        break;
+                    case "2":
+                        CreateNewTransaction();
+                        break;
+                    case "3":
+                        ProcessReturn();
+                        break;
+                    case "4":
+                        AddNewCustomer();
+                        break;
+                    case "5":
+                        AddNewVehicle();
+                        break;
+                    case "6":
+                        rentalApp.PrintRevenueByType();
+                        break;
+                    case "7":
+                        rentalApp.PrintMostProfitableVehicle();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Pilihan tidak valid.");
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\n[Terjadi Kesalahan]: {ex.Message}");
             }
 
             Console.WriteLine("\nEnter untuk melanjutkan...");
@@ -99,10 +111,10 @@ class Program
             return;
         }
 
-        Console.Write("\nDurasi Sewa (hari): ");
+        Console.Write("\nDurasi Sewa (hari, 1-30): ");
         if (!int.TryParse(Console.ReadLine(), out int days))
         {
-            Console.WriteLine("Input durasi harus berupa angka.");
+            Console.WriteLine("[Validasi Gagal]: Input durasi sewa harus berupa angka.");
             return;
         }
 
@@ -110,6 +122,11 @@ class Program
         try
         {
             trx = new RentalTransaction(customer, days);
+        }
+        catch (InvalidRentalDurationException ex)
+        {
+            Console.WriteLine($"\n[Validasi Durasi Gagal]: {ex.Message}");
+            return;
         }
         catch (ArgumentOutOfRangeException ex)
         {
@@ -126,164 +143,334 @@ class Program
         {
             Console.Write("\nMasukkan Plat Nomor Kendaraan: ");
             var plate = Console.ReadLine()?.Trim() ?? string.Empty;
-            var vehicle = rentalApp.FindVehicle(plate);
 
-            if (vehicle == null)
+            if (string.IsNullOrWhiteSpace(plate))
             {
-                Console.WriteLine("Kendaraan dengan plat tersebut tidak ditemukan.");
+                Console.WriteLine("[Validasi Gagal]: Plat nomor kendaraan tidak boleh kosong.");
             }
             else
             {
-                bool withDriver = false;
-                if (vehicle is Car || vehicle is Bus)
+                var vehicle = rentalApp.FindVehicle(plate);
+                if (vehicle == null)
                 {
-                    Console.Write("Pakai sopir? (y/n): ");
-                    withDriver = Console.ReadLine()?.Trim().ToLower() == "y";
+                    Console.WriteLine($"Kendaraan dengan plat '{plate}' tidak ditemukan.");
                 }
-                else if (vehicle is Motorcycle motor)
+                else
                 {
-                    Console.Write("Extra helm? (y/n): ");
-                    motor.ExtraHelmet = Console.ReadLine()?.Trim().ToLower() == "y";
-                }
-
-                try
-                {
-                    if (trx.Add(vehicle, withDriver))
+                    bool withDriver = false;
+                    if (vehicle is Car || vehicle is Bus)
                     {
-                        Console.WriteLine($"Kendaraan {vehicle.PlateNumber} berhasil ditambahkan ke transaksi.");
+                        Console.Write("Pakai sopir? (y/n): ");
+                        withDriver = Console.ReadLine()?.Trim().ToLower() == "y";
+                    }
+                    else if (vehicle is Motorcycle motor)
+                    {
+                        Console.Write("Extra helm? (y/n): ");
+                        motor.ExtraHelmet = Console.ReadLine()?.Trim().ToLower() == "y";
+                    }
+
+                    try
+                    {
+                        if (trx.Add(vehicle, withDriver))
+                        {
+                            Console.WriteLine($"Kendaraan {vehicle.PlateNumber} berhasil ditambahkan ke transaksi.");
+                        }
+                    }
+                    catch (VehicleNotAvailableException ex)
+                    {
+                        Console.WriteLine($"\n[Kendaraan Tidak Tersedia]: {ex.Message}");
+                    }
+                    catch (InvalidOperationException ex)
+                    {
+                        Console.WriteLine($"\n[Gagal Menambah Kendaraan]: {ex.Message}");
+                    }
+                    catch (ArgumentException ex)
+                    {
+                        Console.WriteLine($"\n[Validasi Gagal]: {ex.Message}");
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"\n[Error]: {ex.Message}");
                     }
                 }
-                catch (InvalidOperationException ex)
-                {
-                    Console.WriteLine($"\n[Gagal Menambah Kendaraan]: {ex.Message}");
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"\n[Error]: {ex.Message}");
-                }
+            }
+
+            if (trx.Vehicles.Count >= 5)
+            {
+                Console.WriteLine("\n[Info] Jumlah sewa telah mencapai batas maksimal 5 kendaraan.");
+                break;
             }
 
             Console.Write("Tambah kendaraan lagi? (y/n): ");
             if (Console.ReadLine()?.Trim().ToLower() != "y") break;
         }
 
-        trx.printInvoice();
-        rentalApp.Record(trx);
+        if (trx.Vehicles.Count == 0)
+        {
+            Console.WriteLine("\n[Batal] Transaksi dibatalkan karena tidak ada kendaraan yang berhasil ditambahkan.");
+            return;
+        }
 
-        // if (transactionCount < transactionData.Length)
-        // {
-        //     transactionData[transactionCount++] = trx;
-        // }
-        transactionData.Add(trx);
+        try
+        {
+            trx.printInvoice();
+            rentalApp.Record(trx);
+            transactionData.Add(trx);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n[Error Pencatatan Transaksi]: {ex.Message}");
+        }
     }
 
     static void ProcessReturn()
     {
         Console.WriteLine("\n--- Proses Pengembalian Kendaraan ---");
-        // if (transactionCount == 0)
-        if (transactionData.Count == 0)
+        try
         {
-            Console.WriteLine("Belum ada transaksi.");
-            return;
-        }
+            if (transactionData.Count == 0)
+            {
+                Console.WriteLine("Belum ada transaksi.");
+                return;
+            }
 
-        Console.WriteLine("Daftar Transaksi:");
-        // for (int i = 0; i < transactionCount; i++)
-        for (int i = 0; i < transactionData.Count; i++)
+            Console.WriteLine("Daftar Transaksi:");
+            for (int i = 0; i < transactionData.Count; i++)
+            {
+                var t = transactionData[i];
+                string status = t.IsReturned ? "[SUDAH KEMBALI]" : "[SEDANG DISEWA]";
+                Console.WriteLine($"{i + 1}. {status} Transaksi Pelanggan: {t.Customer?.Name} ({t.RentalDays} hari, {t.Vehicles.Count} unit)");
+            }
+
+            Console.Write("Pilih nomor transaksi yang ingin dikembalikan: ");
+            var choiceInput = Console.ReadLine()?.Trim();
+            if (!int.TryParse(choiceInput, out int idx) || idx < 1 || idx > transactionData.Count)
+            {
+                throw new ArgumentOutOfRangeException(nameof(idx), $"Pilihan transaksi tidak valid (harus antara 1 dan {transactionData.Count}).");
+            }
+
+            var trx = transactionData[idx - 1];
+
+            if (trx.IsReturned)
+            {
+                throw new InvalidOperationException("Transaksi ini sudah pernah diproses pengembaliannya sebelumnya.");
+            }
+
+            Console.Write("Masukkan keterlambatan pengembalian (dalam jam, ketik 0 jika tepat waktu): ");
+            var lateInput = Console.ReadLine()?.Trim();
+            if (!int.TryParse(lateInput, out int lateHours) || lateHours < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(lateHours), "Jam keterlambatan harus berupa angka 0 atau lebih.");
+            }
+
+            int totalCost = rentalApp.ProcessReturn(trx, lateHours);
+            Console.WriteLine("\n========================================================");
+            Console.WriteLine(">>> PENGEMBALIAN KENDARAAN BERHASIL DIPROSES <<<");
+            Console.WriteLine($"Keterlambatan : {(lateHours > 0 ? $"{lateHours} jam (Dikenakan denda)" : "Tepat waktu (Tanpa denda)")}");
+            Console.WriteLine($"Total Biaya   : Rp {totalCost:N0}");
+            Console.WriteLine("=======================================================");
+        }
+        catch (ArgumentOutOfRangeException ex)
         {
-            Console.WriteLine($"{i + 1}. Transaksi Pelanggan: {transactionData[i].customer?.Name} ({transactionData[i].RentalDays} hari)");
+            Console.WriteLine($"\n[Validasi Nilai Gagal]: {ex.Message}");
         }
-
-        Console.Write("Pilih nomor transaksi yang ingin dikembalikan: ");
-        // if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionCount)
-        if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionData.Count)
+        catch (InvalidOperationException ex)
         {
-            Console.WriteLine("Pilihan transaksi tidak valid.");
-            return;
+            Console.WriteLine($"\n[Gagal Pengembalian]: {ex.Message}");
         }
-
-        var trx = transactionData[idx - 1];
-
-        Console.Write("Masukkan keterlambatan pengembalian (dalam jam, ketik 0 jika tepat waktu): ");
-        if (!int.TryParse(Console.ReadLine(), out int lateHours) || lateHours < 0)
+        catch (Exception ex)
         {
-            Console.WriteLine("Jam keterlambatan tidak valid.");
-            return;
+            Console.WriteLine($"\n[Error]: {ex.Message}");
         }
-
-        // int totalCost = trx.Return(lateHours);
-        int totalCost = rentalApp.ProcessReturn(trx, lateHours);
-        Console.WriteLine("\n========================================================");
-        Console.WriteLine(">>> PENGEMBALIAN KENDARAAN BERHASIL DIPROSES <<<");
-        Console.WriteLine($"Keterlambatan : {(lateHours > 0 ? $"{lateHours} jam (Dikenakan denda)" : "Tepat waktu (Tanpa denda)")}");
-        Console.WriteLine($"Total Biaya   : Rp {totalCost:N0}");
-        Console.WriteLine("=======================================================");
     }
 
     static void AddNewCustomer()
     {
         Console.WriteLine("\n--- Tambah Pelanggan Baru ---");
-        Console.Write("ID Pelanggan : ");
-        var id = Console.ReadLine()?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(id))
+        try
         {
-            Console.WriteLine("ID Pelanggan tidak boleh kosong.");
-            return;
+            Console.Write("ID Pelanggan : ");
+            var id = Console.ReadLine()?.Trim() ?? string.Empty;
+            if (customerData.Any(c => string.Equals(c.CustomerID, id, StringComparison.OrdinalIgnoreCase)))
+            {
+                throw new InvalidOperationException($"Pelanggan dengan ID '{id}' sudah terdaftar.");
+            }
+
+            Console.Write("Nama         : ");
+            var name = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            Console.Write("Nomor Telepon: ");
+            var phone = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            var newCustomer = new Customer(id, name, phone);
+            customerData.Add(newCustomer);
+            Console.WriteLine($"\n[Sukses] Pelanggan '{newCustomer.Name}' berhasil ditambahkan.");
         }
-
-        Console.Write("Nama         : ");
-        var name = Console.ReadLine()?.Trim() ?? string.Empty;
-        Console.Write("Nomor Telepon: ");
-        var phone = Console.ReadLine()?.Trim() ?? string.Empty;
-
-        // if (customerCount < customerData.Length)
-        // {
-        //     customerData[customerCount++] = new Customer(id, name, phone);
-        //     Console.WriteLine("Pelanggan berhasil ditambahkan.");
-        // }
-        // else
-        // {
-        //     Console.WriteLine("Kapasitas penyimpanan pelanggan penuh.");
-        // }
-        customerData.Add(new Customer(id, name, phone));
-        Console.WriteLine("Pelanggan berhasil ditambahkan.");
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"\n[Validasi Gagal]: {ex.Message}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"\n[Operasi Gagal]: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n[Error]: {ex.Message}");
+        }
     }
 
     static Customer? GetOrCreateCustomer()
     {
-        // if (customerCount > 0)
-        if (customerData.Count > 0)
+        try
         {
-            Console.WriteLine("\nPilih Pelanggan Terdaftar:");
-            // for (int i = 0; i < customerCount; i++)
-            for (int i = 0; i < customerData.Count; i++)
+            if (customerData.Count > 0)
             {
-                Console.WriteLine($"{i + 1}. [{customerData[i].CustomerID}] {customerData[i].Name} ({customerData[i].PhoneNumber})");
+                Console.WriteLine("\nPilih Pelanggan Terdaftar:");
+                for (int i = 0; i < customerData.Count; i++)
+                {
+                    Console.WriteLine($"{i + 1}. [{customerData[i].CustomerID}] {customerData[i].Name} ({customerData[i].PhoneNumber})");
+                }
+                Console.Write("Pilih nomor pelanggan (atau ketik 0 untuk buat baru): ");
+                var input = Console.ReadLine()?.Trim();
+                if (!int.TryParse(input, out int sel) || sel < 0 || sel > customerData.Count)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(sel), $"Pilihan harus berupa angka antara 0 dan {customerData.Count}.");
+                }
+
+                if (sel > 0)
+                {
+                    return customerData[sel - 1];
+                }
             }
-            Console.Write("Pilih nomor pelanggan (atau ketik 0 untuk buat baru): ");
-            // if (int.TryParse(Console.ReadLine(), out int sel) && sel >= 1 && sel <= customerCount)
-            if (int.TryParse(Console.ReadLine(), out int sel) && sel >= 1 && sel <= customerData.Count)
+
+            Console.WriteLine("\n--- Buat Data Pelanggan Baru ---");
+            Console.Write("ID Pelanggan : ");
+            var id = Console.ReadLine()?.Trim() ?? string.Empty;
+            if (customerData.Any(c => string.Equals(c.CustomerID, id, StringComparison.OrdinalIgnoreCase)))
             {
-                return customerData[sel - 1];
+                throw new InvalidOperationException($"Pelanggan dengan ID '{id}' sudah terdaftar.");
             }
+
+            Console.Write("Nama         : ");
+            var name = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            Console.Write("Nomor Telepon: ");
+            var phone = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            var newCust = new Customer(id, name, phone);
+            customerData.Add(newCust);
+            return newCust;
         }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"\n[Validasi Gagal]: {ex.Message}");
+            return null;
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"\n[Operasi Gagal]: {ex.Message}");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n[Error]: {ex.Message}");
+            return null;
+        }
+    }
 
-        Console.WriteLine("\n--- Buat Data Pelanggan Baru ---");
-        Console.Write("ID Pelanggan : ");
-        var id = Console.ReadLine()?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(id)) return null;
+    static void AddNewVehicle()
+    {
+        Console.WriteLine("\n--- Tambah Kendaraan Baru ke Armada ---");
+        try
+        {
+            Console.WriteLine("Pilih Tipe Kendaraan:");
+            Console.WriteLine("1. Mobil (Car)");
+            Console.WriteLine("2. Sepeda Motor (Motorcycle)");
+            Console.WriteLine("3. Bus");
+            Console.Write("Pilih (1-3): ");
+            var typeChoice = Console.ReadLine()?.Trim();
 
-        Console.Write("Nama         : ");
-        var name = Console.ReadLine()?.Trim() ?? string.Empty;
-        Console.Write("Nomor Telepon: ");
-        var phone = Console.ReadLine()?.Trim() ?? string.Empty;
+            if (typeChoice != "1" && typeChoice != "2" && typeChoice != "3")
+            {
+                throw new ArgumentException("Pilihan tipe kendaraan tidak valid (harus 1, 2, atau 3).");
+            }
 
-        var newCust = new Customer(id, name, phone);
-        // if (customerCount < customerData.Length)
-        // {
-        //     customerData[customerCount++] = newCust;
-        // }
-        customerData.Add(newCust);
-        return newCust;
+            Console.Write("Plat Nomor       : ");
+            var plate = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            if (rentalApp.FindVehicle(plate) != null)
+            {
+                throw new InvalidOperationException($"Kendaraan dengan plat '{plate}' sudah terdaftar dalam sistem.");
+            }
+
+            Console.Write("Merk / Model     : ");
+            var brand = Console.ReadLine()?.Trim() ?? string.Empty;
+
+            Console.Write("Tahun            : ");
+            if (!int.TryParse(Console.ReadLine(), out int year))
+            {
+                throw new FormatException("Tahun kendaraan harus berupa angka.");
+            }
+
+            Console.Write("Tarif Harian (Rp): ");
+            if (!int.TryParse(Console.ReadLine(), out int rate))
+            {
+                throw new FormatException("Tarif harian harus berupa angka.");
+            }
+
+            int nextId = fleetData.Count + 1;
+            Vehicle newVehicle;
+
+            switch (typeChoice)
+            {
+                case "1":
+                    Console.Write("Sedia sopir? (y/n): ");
+                    bool withDriver = Console.ReadLine()?.Trim().ToLower() == "y";
+                    newVehicle = new Car(nextId, plate, brand, year, rate, withDriver);
+                    break;
+                case "2":
+                    Console.Write("Extra helm? (y/n): ");
+                    bool extraHelmet = Console.ReadLine()?.Trim().ToLower() == "y";
+                    newVehicle = new Motorcycle(nextId, plate, brand, year, rate, extraHelmet);
+                    break;
+                case "3":
+                    Console.Write("Kapasitas Kursi  : ");
+                    if (!int.TryParse(Console.ReadLine(), out int seatCap))
+                    {
+                        throw new FormatException("Kapasitas kursi bus harus berupa angka.");
+                    }
+                    Console.Write("Sedia sopir? (y/n): ");
+                    bool busDriver = Console.ReadLine()?.Trim().ToLower() == "y";
+                    newVehicle = new Bus(nextId, plate, brand, year, rate, seatCap, busDriver);
+                    break;
+                default:
+                    throw new ArgumentException("Tipe kendaraan tidak dikenal.");
+            }
+
+            fleetData.Add(newVehicle);
+            rentalApp.AddVehicle(newVehicle);
+            Console.WriteLine($"\n[Sukses] Kendaraan {newVehicle.Brand} [{newVehicle.PlateNumber}] berhasil ditambahkan ke armada!");
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Console.WriteLine($"\n[Validasi Rentang Gagal]: {ex.Message}");
+        }
+        catch (ArgumentException ex)
+        {
+            Console.WriteLine($"\n[Validasi Input Gagal]: {ex.Message}");
+        }
+        catch (InvalidOperationException ex)
+        {
+            Console.WriteLine($"\n[Operasi Gagal]: {ex.Message}");
+        }
+        catch (FormatException ex)
+        {
+            Console.WriteLine($"\n[Format Tidak Valid]: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n[Error]: {ex.Message}");
+        }
     }
 }

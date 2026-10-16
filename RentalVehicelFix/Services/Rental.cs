@@ -19,6 +19,7 @@ public class Rental
 
     public Rental() : this((Repository<Vehicle>?)null)
     {
+        
     }
 
     public Rental(IEnumerable<Vehicle> initialFleet) : this(new Repository<Vehicle>())
@@ -44,7 +45,11 @@ public class Rental
         _vehicleRepository = repository ?? new Repository<Vehicle>();
     }
     
-    public void AddVehicle(Vehicle vehicle) => _vehicleRepository.Add(vehicle);
+    public void AddVehicle(Vehicle vehicle)
+    {
+        if (vehicle == null) throw new ArgumentNullException(nameof(vehicle), "Kendaraan tidak boleh null.");
+        _vehicleRepository.Add(vehicle);
+    }
 
     public Vehicle? FindVehicle(string plateNumber) => _vehicleRepository.FindByPlate(plateNumber);
     // {
@@ -62,7 +67,9 @@ public class Rental
 
     public void Record(RentalTransaction trx)
     {
-        if (trx == null) return;
+        if (trx == null) throw new ArgumentNullException(nameof(trx), "Transaksi tidak boleh bernilai null.");
+        if (trx.Vehicles.Count == 0) throw new InvalidOperationException("Transaksi tidak dapat dicatat karena belum memilih kendaraan.");
+        if (IsBlacklisted(trx.Customer.CustomerID)) throw new InvalidOperationException($"Pelanggan '{trx.Customer.Name}' ({trx.Customer.CustomerID}) masuk dalam daftar hitam (blacklist) dan tidak bisa menyewa lagi.");
         
         _transactions.Add(trx);
         Console.WriteLine($"Transaksi atas nama {trx.Customer?.Name} berhasil dilakukan");
@@ -88,6 +95,9 @@ public class Rental
 
     public int ProcessReturn(RentalTransaction trx, int lateHours)
     {
+        if (trx == null) throw new ArgumentNullException(nameof(trx), "Transaksi tidak boleh bernilai null.");
+        if (lateHours < 0) throw new ArgumentOutOfRangeException(nameof(lateHours), "Jam keterlambatan tidak boleh bernilai negatif.");
+
         int totalCost = trx.Return(lateHours);
 
         if (lateHours > 24)

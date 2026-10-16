@@ -10,6 +10,9 @@ public class Motorcycle : Vehicle
 
     public override int GetCost(int days)
     {
+        if (days <= 0)
+            throw new ArgumentOutOfRangeException(nameof(days), "Durasi hari sewa harus lebih dari 0.");
+
         if (ExtraHelmet)
         {
             return (150000 * days) + (10000 * days);

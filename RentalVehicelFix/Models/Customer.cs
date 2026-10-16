@@ -8,9 +8,16 @@ public class Customer
     
     public Customer(string customerID, string name, string phoneNumber)
     {
-        CustomerID = customerID;
-        Name = name;
-        PhoneNumber = phoneNumber;
+        if (string.IsNullOrWhiteSpace(customerID))
+            throw new ArgumentException("ID Pelanggan tidak boleh kosong.");
+        if (string.IsNullOrWhiteSpace(name))
+            throw new ArgumentException("Nama pelanggan tidak boleh kosong.");
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            throw new ArgumentException("Nomor telepon tidak boleh kosong.");
+
+        CustomerID = customerID.Trim();
+        Name = name.Trim();
+        PhoneNumber = phoneNumber.Trim();
     }
 
     public void Info()

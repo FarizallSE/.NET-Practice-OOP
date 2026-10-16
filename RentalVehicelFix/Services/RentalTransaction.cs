@@ -1,3 +1,4 @@
+using RentalVehicelFix.Exceptions;
 using RentalVehicelFix.Interfaces;
 using RentalVehicelFix.Models;
 using RentalVehicelFix.Models.Vehicles;
@@ -14,6 +15,7 @@ public class RentalTransaction
 
     public List<Vehicle> _vehicles = new List<Vehicle>();
     public IReadOnlyList<Vehicle> Vehicles => _vehicles;
+    public bool IsReturned { get; private set; } = false;
 
     private int _rentalDays;
     public int RentalDays
@@ -21,13 +23,9 @@ public class RentalTransaction
         get => _rentalDays;
         set
         {
-            // if (value < 1)
-            // {
-            //     throw new ArgumentOutOfRangeException(nameof(value), "Rental Days must be greater than zero.");
-            // }
-            if (value < 1 || value > 31)
+            if (value < 1 || value > 30)
             {
-                throw new ArgumentOutOfRangeException(nameof(value), "Rental Days must be between 1 and 30 days.");
+                throw new InvalidRentalDurationException($"Lama sewa di luar 1-30 hari ({value} hari).");
             }
             _rentalDays = value;
         }
@@ -41,20 +39,30 @@ public class RentalTransaction
     
     public bool Add(Vehicle vehicle)
     {
-        if (vehicle == null) throw new ArgumentNullException(nameof(vehicle));
+        if (vehicle == null) throw new ArgumentNullException(nameof(vehicle), "Kendaraan tidak boleh null.");
+
+        if (IsReturned)
+        {
+            throw new InvalidOperationException("Tidak dapat menambah kendaraan pada transaksi yang sudah dikembalikan/selesai.");
+        }
 
         if (_vehicles.Count >= 5)
         {
             // Console.WriteLine("[Gagal] Batas maksimal sewa per transaksi adalah 5 kendaraan.");
             // return false;
-            throw new InvalidOperationException("Jumlah maksimum kendaraan yang disewa per transaksi adalah 5");
+            throw new InvalidOperationException("Jumlah maksimum kendaraan yang disewa per transaksi adalah 5 unit.");
         }
 
         if (vehicle.Status == "Renting")
         {
             // Console.WriteLine($"[Gagal] Kendaraan {vehicle.PlateNumber} sedang tidak tersedia.");
             // return false;
-            throw new InvalidOperationException($"Kendaraan denga plat nomor {vehicle.PlateNumber} sedang disewakan");
+            throw new VehicleNotAvailableException($"Kendaraan dengan plat nomor {vehicle.PlateNumber} sedang disewakan.");
+        }
+
+        if (_vehicles.Any(v => string.Equals(v.PlateNumber, vehicle.PlateNumber, StringComparison.OrdinalIgnoreCase)))
+        {
+            throw new InvalidOperationException($"Kendaraan dengan plat nomor {vehicle.PlateNumber} sudah ada dalam transaksi ini.");
         }
 
         vehicle.Rent();
@@ -103,6 +111,21 @@ public class RentalTransaction
 
     public int Return(int lateHours)
     {
+        if (IsReturned)
+        {
+            throw new InvalidOperationException("Transaksi ini sudah dikembalikan.");
+        }
+
+        if (lateHours < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(lateHours), "Jam keterlambatan tidak boleh bernilai negatif.");
+        }
+
+        if (_vehicles.Count == 0)
+        {
+            throw new InvalidOperationException("Transaksi tidak memiliki kendaraan untuk dikembalikan.");
+        }
+
         int subtotal = 0;
         int totalFine = 0;
 
@@ -124,6 +147,7 @@ public class RentalTransaction
 
         int discount = CalculateDiscount();
         int grandTotal = (subtotal - discount) + totalFine;
+        IsReturned = true;
         return grandTotal;
     }
 

@@ -13,6 +13,9 @@ public class Car : Vehicle, IHasDriver
 
     public override int GetCost(int days)
     {
+        if (days <= 0)
+            throw new ArgumentOutOfRangeException(nameof(days), "Durasi hari sewa harus lebih dari 0.");
+
         if (!WithDriver)
         {
             return DailyRate  * days;
