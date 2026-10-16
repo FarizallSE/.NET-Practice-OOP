@@ -15,19 +15,23 @@ class Program
         new Bus(5, "B 5555 BUS", "Isuzu Elf Long", 2020, 1200000, seatCapacity: 19, withDriver: false)
     };
 
-    private static Customer[] customerData = new Customer[50];
-    private static int customerCount = 0;
+    // private static Customer[] customerData = new Customer[50];
+    // private static int customerCount = 0;
+    private static List<Customer> customerData = new List<Customer>();
 
-    private static RentalTransaction[] transactionData = new RentalTransaction[100];
-    private static int transactionCount = 0;
+    // private static RentalTransaction[] transactionData = new RentalTransaction[100];
+    // private static int transactionCount = 0;
+    private static List<RentalTransaction> transactionData = new List<RentalTransaction>();
 
     private static Rental rentalApp = new Rental(fleetData);
 
     static void Main(string[] args)
     {
         // Data awal pelanggan
-        customerData[customerCount++] = new Customer("CUST001", "Budi Santoso", "08123456789");
-        customerData[customerCount++] = new Customer("CUST002", "Siti Rahma", "08567891234");
+        // customerData[customerCount++] = new Customer("CUST001", "Budi Santoso", "08123456789");
+        // customerData[customerCount++] = new Customer("CUST002", "Siti Rahma", "08567891234");
+        customerData.Add(new Customer("CUST001", "Budi Santoso", "08123456789"));
+        customerData.Add(new Customer("CUST002", "Siti Rahma", "08567891234"));
 
         while (true)
         {
@@ -38,6 +42,7 @@ class Program
             Console.WriteLine("3. Proses Pengembalian");
             Console.WriteLine("4. Tambah Pelanggan");
             Console.WriteLine("5. Laporan Pendapatan per Jenis Kendaraan");
+            Console.WriteLine("6. Kendaraan Paling Menguntungkan");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();
@@ -59,6 +64,9 @@ class Program
                 case "5":
                 case "7":
                     rentalApp.PrintRevenueByType();
+                    break;
+                case "6":
+                    rentalApp.PrintMostProfitableVehicle();
                     break;
                 case "0":
                     return;
@@ -84,14 +92,35 @@ class Program
             return;
         }
 
-        Console.Write("\nDurasi Sewa (hari): ");
-        if (!int.TryParse(Console.ReadLine(), out int days) || days <= 0)
+        // Cek apakah pelanggan masuk daftar hitam (blacklist)
+        if (rentalApp.IsBlacklisted(customer.CustomerID))
         {
-            Console.WriteLine("Durasi sewa minimal 1 hari.");
+            Console.WriteLine($"\n[TRANSAKSI DITOLAK] Pelanggan {customer.Name} ({customer.CustomerID}) masuk daftar hitam (blacklist) karena riwayat keterlambatan > 24 jam dan TIDAK BISA menyewa lagi!");
             return;
         }
 
-        var trx = new RentalTransaction(customer, days);
+        Console.Write("\nDurasi Sewa (hari): ");
+        if (!int.TryParse(Console.ReadLine(), out int days))
+        {
+            Console.WriteLine("Input durasi harus berupa angka.");
+            return;
+        }
+
+        RentalTransaction trx;
+        try
+        {
+            trx = new RentalTransaction(customer, days);
+        }
+        catch (ArgumentOutOfRangeException ex)
+        {
+            Console.WriteLine($"\n[Validasi Gagal]: {ex.Message}");
+            return;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"\n[Error]: {ex.Message}");
+            return;
+        }
 
         while (true)
         {
@@ -102,10 +131,6 @@ class Program
             if (vehicle == null)
             {
                 Console.WriteLine("Kendaraan dengan plat tersebut tidak ditemukan.");
-            }
-            else if (vehicle.Status == "Renting")
-            {
-                Console.WriteLine($"Kendaraan {vehicle.PlateNumber} sedang tidak tersedia.");
             }
             else
             {
@@ -121,9 +146,20 @@ class Program
                     motor.ExtraHelmet = Console.ReadLine()?.Trim().ToLower() == "y";
                 }
 
-                if (trx.Add(vehicle, withDriver))
+                try
                 {
-                    Console.WriteLine($"Kendaraan {vehicle.PlateNumber} berhasil ditambahkan ke transaksi.");
+                    if (trx.Add(vehicle, withDriver))
+                    {
+                        Console.WriteLine($"Kendaraan {vehicle.PlateNumber} berhasil ditambahkan ke transaksi.");
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    Console.WriteLine($"\n[Gagal Menambah Kendaraan]: {ex.Message}");
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"\n[Error]: {ex.Message}");
                 }
             }
 
@@ -134,29 +170,33 @@ class Program
         trx.printInvoice();
         rentalApp.Record(trx);
 
-        if (transactionCount < transactionData.Length)
-        {
-            transactionData[transactionCount++] = trx;
-        }
+        // if (transactionCount < transactionData.Length)
+        // {
+        //     transactionData[transactionCount++] = trx;
+        // }
+        transactionData.Add(trx);
     }
 
     static void ProcessReturn()
     {
         Console.WriteLine("\n--- Proses Pengembalian Kendaraan ---");
-        if (transactionCount == 0)
+        // if (transactionCount == 0)
+        if (transactionData.Count == 0)
         {
             Console.WriteLine("Belum ada transaksi.");
             return;
         }
 
         Console.WriteLine("Daftar Transaksi:");
-        for (int i = 0; i < transactionCount; i++)
+        // for (int i = 0; i < transactionCount; i++)
+        for (int i = 0; i < transactionData.Count; i++)
         {
             Console.WriteLine($"{i + 1}. Transaksi Pelanggan: {transactionData[i].customer?.Name} ({transactionData[i].RentalDays} hari)");
         }
 
         Console.Write("Pilih nomor transaksi yang ingin dikembalikan: ");
-        if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionCount)
+        // if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionCount)
+        if (!int.TryParse(Console.ReadLine(), out int idx) || idx < 1 || idx > transactionData.Count)
         {
             Console.WriteLine("Pilihan transaksi tidak valid.");
             return;
@@ -171,7 +211,8 @@ class Program
             return;
         }
 
-        int totalCost = trx.Return(lateHours);
+        // int totalCost = trx.Return(lateHours);
+        int totalCost = rentalApp.ProcessReturn(trx, lateHours);
         Console.WriteLine("\n========================================================");
         Console.WriteLine(">>> PENGEMBALIAN KENDARAAN BERHASIL DIPROSES <<<");
         Console.WriteLine($"Keterlambatan : {(lateHours > 0 ? $"{lateHours} jam (Dikenakan denda)" : "Tepat waktu (Tanpa denda)")}");
@@ -195,28 +236,33 @@ class Program
         Console.Write("Nomor Telepon: ");
         var phone = Console.ReadLine()?.Trim() ?? string.Empty;
 
-        if (customerCount < customerData.Length)
-        {
-            customerData[customerCount++] = new Customer(id, name, phone);
-            Console.WriteLine("Pelanggan berhasil ditambahkan.");
-        }
-        else
-        {
-            Console.WriteLine("Kapasitas penyimpanan pelanggan penuh.");
-        }
+        // if (customerCount < customerData.Length)
+        // {
+        //     customerData[customerCount++] = new Customer(id, name, phone);
+        //     Console.WriteLine("Pelanggan berhasil ditambahkan.");
+        // }
+        // else
+        // {
+        //     Console.WriteLine("Kapasitas penyimpanan pelanggan penuh.");
+        // }
+        customerData.Add(new Customer(id, name, phone));
+        Console.WriteLine("Pelanggan berhasil ditambahkan.");
     }
 
     static Customer? GetOrCreateCustomer()
     {
-        if (customerCount > 0)
+        // if (customerCount > 0)
+        if (customerData.Count > 0)
         {
             Console.WriteLine("\nPilih Pelanggan Terdaftar:");
-            for (int i = 0; i < customerCount; i++)
+            // for (int i = 0; i < customerCount; i++)
+            for (int i = 0; i < customerData.Count; i++)
             {
                 Console.WriteLine($"{i + 1}. [{customerData[i].CustomerID}] {customerData[i].Name} ({customerData[i].PhoneNumber})");
             }
             Console.Write("Pilih nomor pelanggan (atau ketik 0 untuk buat baru): ");
-            if (int.TryParse(Console.ReadLine(), out int sel) && sel >= 1 && sel <= customerCount)
+            // if (int.TryParse(Console.ReadLine(), out int sel) && sel >= 1 && sel <= customerCount)
+            if (int.TryParse(Console.ReadLine(), out int sel) && sel >= 1 && sel <= customerData.Count)
             {
                 return customerData[sel - 1];
             }
@@ -233,10 +279,11 @@ class Program
         var phone = Console.ReadLine()?.Trim() ?? string.Empty;
 
         var newCust = new Customer(id, name, phone);
-        if (customerCount < customerData.Length)
-        {
-            customerData[customerCount++] = newCust;
-        }
+        // if (customerCount < customerData.Length)
+        // {
+        //     customerData[customerCount++] = newCust;
+        // }
+        customerData.Add(newCust);
         return newCust;
     }
 }

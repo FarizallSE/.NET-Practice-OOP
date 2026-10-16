@@ -25,7 +25,8 @@ public abstract class Vehicle
         {
             if (value <= 0)
             {
-                throw new Exception("Cannot Assign Daily Rate To Be zero!");
+                // throw new Exception("Cannot Assign Daily Rate To Be zero!");
+                throw new ArgumentException("Cannot Assign Daily Rate To Be zero or negative!", nameof(value));
             }
             _dailyRate = value;
         }
