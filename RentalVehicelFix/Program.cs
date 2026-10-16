@@ -1,6 +1,7 @@
 using RentalVehicelFix.Exceptions;
 using RentalVehicelFix.Models;
 using RentalVehicelFix.Models.Vehicles;
+using RentalVehicelFix.Repositories;
 using RentalVehicelFix.Services;
 
 namespace RentalVehicelFix;
@@ -19,7 +20,7 @@ class Program
 
     // private static Customer[] customerData = new Customer[50];
     // private static int customerCount = 0;
-    private static List<Customer> customerData = new List<Customer>();
+    private static Repository<Customer, string> customerRepo = new(c => c.CustomerID, StringComparer.OrdinalIgnoreCase);
 
     // private static RentalTransaction[] transactionData = new RentalTransaction[100];
     // private static int transactionCount = 0;
@@ -32,8 +33,8 @@ class Program
         // Data awal pelanggan
         // customerData[customerCount++] = new Customer("CUST001", "Budi Santoso", "08123456789");
         // customerData[customerCount++] = new Customer("CUST002", "Siti Rahma", "08567891234");
-        customerData.Add(new Customer("CUST001", "Budi Santoso", "08123456789"));
-        customerData.Add(new Customer("CUST002", "Siti Rahma", "08567891234"));
+        customerRepo.Add(new Customer("CUST001", "Budi Santoso", "08123456789"));
+        customerRepo.Add(new Customer("CUST002", "Siti Rahma", "08567891234"));
 
         while (true)
         {
@@ -291,7 +292,7 @@ class Program
         {
             Console.Write("ID Pelanggan : ");
             var id = Console.ReadLine()?.Trim() ?? string.Empty;
-            if (customerData.Any(c => string.Equals(c.CustomerID, id, StringComparison.OrdinalIgnoreCase)))
+            if (customerRepo.Exists(id))
             {
                 throw new InvalidOperationException($"Pelanggan dengan ID '{id}' sudah terdaftar.");
             }
@@ -303,7 +304,7 @@ class Program
             var phone = Console.ReadLine()?.Trim() ?? string.Empty;
 
             var newCustomer = new Customer(id, name, phone);
-            customerData.Add(newCustomer);
+            customerRepo.Add(newCustomer);
             Console.WriteLine($"\n[Sukses] Pelanggan '{newCustomer.Name}' berhasil ditambahkan.");
         }
         catch (ArgumentException ex)
@@ -324,30 +325,31 @@ class Program
     {
         try
         {
-            if (customerData.Count > 0)
+            var customers = customerRepo.GetAll();
+            if (customers.Count > 0)
             {
                 Console.WriteLine("\nPilih Pelanggan Terdaftar:");
-                for (int i = 0; i < customerData.Count; i++)
+                for (int i = 0; i < customers.Count; i++)
                 {
-                    Console.WriteLine($"{i + 1}. [{customerData[i].CustomerID}] {customerData[i].Name} ({customerData[i].PhoneNumber})");
+                    Console.WriteLine($"{i + 1}. [{customers[i].CustomerID}] {customers[i].Name} ({customers[i].PhoneNumber})");
                 }
                 Console.Write("Pilih nomor pelanggan (atau ketik 0 untuk buat baru): ");
                 var input = Console.ReadLine()?.Trim();
-                if (!int.TryParse(input, out int sel) || sel < 0 || sel > customerData.Count)
+                if (!int.TryParse(input, out int sel) || sel < 0 || sel > customers.Count)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(sel), $"Pilihan harus berupa angka antara 0 dan {customerData.Count}.");
+                    throw new ArgumentOutOfRangeException(nameof(sel), $"Pilihan harus berupa angka antara 0 dan {customers.Count}.");
                 }
 
                 if (sel > 0)
                 {
-                    return customerData[sel - 1];
+                    return customers[sel - 1];
                 }
             }
 
             Console.WriteLine("\n--- Buat Data Pelanggan Baru ---");
             Console.Write("ID Pelanggan : ");
             var id = Console.ReadLine()?.Trim() ?? string.Empty;
-            if (customerData.Any(c => string.Equals(c.CustomerID, id, StringComparison.OrdinalIgnoreCase)))
+            if (customerRepo.Exists(id))
             {
                 throw new InvalidOperationException($"Pelanggan dengan ID '{id}' sudah terdaftar.");
             }
@@ -359,7 +361,7 @@ class Program
             var phone = Console.ReadLine()?.Trim() ?? string.Empty;
 
             var newCust = new Customer(id, name, phone);
-            customerData.Add(newCust);
+            customerRepo.Add(newCust);
             return newCust;
         }
         catch (ArgumentException ex)

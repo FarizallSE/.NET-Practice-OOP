@@ -9,7 +9,7 @@ public class Rental
     // private Vehicle[] _fleet;
     // private RentalTransaction[] _transactions;
     // private int _transactionCount;
-    private Repository<Vehicle> _vehicleRepository;
+    private Repository<Vehicle, string> _vehicleRepository;
     private List<RentalTransaction> _transactions = new List<RentalTransaction>();
     private HashSet<string> _blacklistedCustomerIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
@@ -17,12 +17,12 @@ public class Rental
     // {
     // }
 
-    public Rental() : this((Repository<Vehicle>?)null)
+    public Rental() : this((Repository<Vehicle, string>?)null)
     {
         
     }
 
-    public Rental(IEnumerable<Vehicle> initialFleet) : this(new Repository<Vehicle>())
+    public Rental(IEnumerable<Vehicle> initialFleet) : this(new Repository<Vehicle, string>(v => v.PlateNumber, StringComparer.OrdinalIgnoreCase))
     {
         if (initialFleet != null)
         {
@@ -40,9 +40,9 @@ public class Rental
     //     _transactionCount = 0;
     // }
 
-    public Rental(Repository<Vehicle>? repository = null)
+    public Rental(Repository<Vehicle, string>? repository = null)
     {
-        _vehicleRepository = repository ?? new Repository<Vehicle>();
+        _vehicleRepository = repository ?? new Repository<Vehicle, string>(v => v.PlateNumber, StringComparer.OrdinalIgnoreCase);
     }
     
     public void AddVehicle(Vehicle vehicle)
@@ -51,7 +51,7 @@ public class Rental
         _vehicleRepository.Add(vehicle);
     }
 
-    public Vehicle? FindVehicle(string plateNumber) => _vehicleRepository.FindByPlate(plateNumber);
+    public Vehicle? FindVehicle(string plateNumber) => _vehicleRepository.FindById(plateNumber);
     // {
     //     if (string.IsNullOrWhiteSpace(plateNumber)) return null;
     //
