@@ -2,9 +2,9 @@ namespace RentalVehicelFix.Repositories;
 
 public class Repository<TEntity, TKey> where TKey : notnull
 {
-    private readonly List<TEntity> _items = new();
-    private readonly Dictionary<TKey, TEntity> _lookup;
-    private readonly Func<TEntity, TKey> _keySelector;
+    private List<TEntity> _items = new();
+    private Dictionary<TKey, TEntity> _lookup;
+    private Func<TEntity, TKey> _keySelector;
 
     public Repository(Func<TEntity, TKey> keySelector, IEqualityComparer<TKey>? comparer = null)
     {
