@@ -1,32 +1,54 @@
-using RentalVehicelFix.Models.Vehicles;
-
 namespace RentalVehicelFix.Repositories;
 
-public class Repository<T> where T : Vehicle
+public class Repository<TEntity, TKey> where TKey : notnull
 {
-    private List<T> _items = new();
-    private Dictionary<string, T> _byPlate = new Dictionary<string, T>(StringComparer.OrdinalIgnoreCase);
+    private readonly List<TEntity> _items = new();
+    private readonly Dictionary<TKey, TEntity> _lookup;
+    private readonly Func<TEntity, TKey> _keySelector;
 
-    public void Add(T item)
+    public Repository(Func<TEntity, TKey> keySelector, IEqualityComparer<TKey>? comparer = null)
     {
-        if (item == null) throw new ArgumentNullException(nameof(item));
-        _items.Add(item);
-        _byPlate[item.PlateNumber] = item;
+        _keySelector = keySelector ?? throw new ArgumentNullException(nameof(keySelector));
+        _lookup = new Dictionary<TKey, TEntity>(comparer ?? EqualityComparer<TKey>.Default);
     }
 
-    public T? FindByPlate(string plateNumber)
+    public void Add(TEntity item)
     {
-        if (string.IsNullOrWhiteSpace(plateNumber)) return null;
-        _byPlate.TryGetValue(plateNumber, out var item);
+        if (item == null) throw new ArgumentNullException(nameof(item), "Item tidak boleh null.");
+
+        TKey key = _keySelector(item);
+        if (key == null || (key is string s && string.IsNullOrWhiteSpace(s)))
+            throw new ArgumentException("Kunci/ID entitas tidak boleh kosong.");
+
+        if (_lookup.ContainsKey(key))
+            throw new InvalidOperationException($"Data dengan ID '{key}' sudah terdaftar.");
+
+        _items.Add(item);
+        _lookup[key] = item;
+    }
+
+    public TEntity? FindById(TKey id)
+    {
+        if (id == null || (id is string s && string.IsNullOrWhiteSpace(s))) return default;
+        _lookup.TryGetValue(id, out var item);
         return item;
     }
 
-    public List<T> GetAll() => _items;
+    public bool Exists(TKey id) => FindById(id) != null;
 
-    public bool Remove(T item)
+    public List<TEntity> GetAll() => _items;
+
+    public bool Remove(TEntity item)
     {
         if (item == null) return false;
-        _byPlate.Remove(item.PlateNumber);
+        TKey key = _keySelector(item);
+        _lookup.Remove(key);
         return _items.Remove(item);
+    }
+
+    public bool RemoveById(TKey id)
+    {
+        var item = FindById(id);
+        return item != null && Remove(item);
     }
 }
