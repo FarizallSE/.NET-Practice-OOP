@@ -30,5 +30,6 @@ public class Bus : Vehicle, IHasDriver
     public override void Info()
     {
         base.Info();
+        Console.WriteLine($"Kapasitas Kursi      : {SeatCapacity}");
     }
 }

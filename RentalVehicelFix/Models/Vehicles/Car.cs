@@ -32,4 +32,10 @@ public class Car : Vehicle, IHasDriver
     {
         return 150000 * days;
     }
+
+    public override void Info()
+    {
+        base.Info();
+        Console.WriteLine($"Use Driver      : {WithDriver}");
+    }
 }
