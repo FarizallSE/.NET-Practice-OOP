@@ -353,4 +353,46 @@ public class Rental
         Console.WriteLine($"Rata-rata durasi  : {averageDays}");
         Console.WriteLine("=============================================");
     }
+
+    //payment async
+    public async Task<bool> ProcessPaymentAsync(RentalTransaction trx, int timeout = 10)
+    {
+        // CancellationTokenSource cts = new CancellationTokenSource();
+        using CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(timeout));
+
+        Console.WriteLine($"Menunggu Pembayaran {trx.GetTotalCost():N0}");
+        Console.WriteLine("pIlih simulasi pembayara");
+        Console.WriteLine("1.Pembayran berhasil");
+        Console.WriteLine("2.Pembayaran gagal");
+        Console.Write("Pilih (1/2): ");
+
+        var mode = Console.ReadLine()?.Trim();
+
+        try
+        {
+            if (mode == "1")
+            {
+                Console.WriteLine("Proses pembayaran...");
+                await Task.Delay(500, cts.Token);
+                Console.WriteLine("Pembayran berhasil");
+                return true;
+            }
+            Console.WriteLine($"tidak bayar...");
+            await Task.Delay((timeout + 2) * 1000, cts.Token);
+            return true;
+        }
+        catch (OperationCanceledException e)
+        {
+            Console.WriteLine("\n=============================================");
+            Console.WriteLine("    Waktu pembayaran telah habis    ");
+            Console.WriteLine("=============================================");
+
+            trx.CancelBooking();
+            
+            Console.WriteLine($"Status kendaraan telah berubah kembali");
+            Console.WriteLine($"Transaksi dibatalkan, {e.Message}");
+            Console.WriteLine("=============================================");
+            return false;
+        }
+    }
 }

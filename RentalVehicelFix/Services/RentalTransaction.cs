@@ -158,6 +158,16 @@ public class RentalTransaction
         return subTotal - CalculateDiscount();
     }
 
+    // Async cancel
+    public void CancelBooking()
+    {
+        foreach (var v in _vehicles)
+        {
+            v.Return();
+        }
+        _vehicles.Clear();
+    }
+
     public void printInvoice()
     {
         Console.WriteLine("\n=======================================================");

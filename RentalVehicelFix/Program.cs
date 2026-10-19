@@ -63,7 +63,8 @@ class Program
                         rentalApp.printAvailable();
                         break;
                     case "2":
-                        CreateNewTransaction();
+                    // karna jdi fungsi async, perlu wait
+                        CreateNewTransaction().Wait();
                         break;
                     case "3":
                         ProcessReturn();
@@ -87,6 +88,8 @@ class Program
                     case "9":
                         rentalApp.PrintAverageRentalDuration();
                         break;
+                    // case "10":
+                    //     rentalApp.Check
                     case "0":
                         return;
                     default:
@@ -104,7 +107,7 @@ class Program
         }
     }
 
-    static void CreateNewTransaction()
+    static async Task CreateNewTransaction()
     {
         Console.WriteLine("\n--- Buat Transaksi Baru ---");
         rentalApp.printAvailable();
@@ -226,8 +229,17 @@ class Program
         try
         {
             trx.printInvoice();
-            rentalApp.Record(trx);
-            transactionData.Add(trx);
+            // rentalApp.Record(trx);
+            // transactionData.Add(trx);
+
+            //Payment cancel cek
+            bool paid = await rentalApp.ProcessPaymentAsync(trx, timeout: 10);
+            if (paid)
+            {
+                rentalApp.Record(trx); 
+                transactionData.Add(trx);
+                Console.WriteLine("Sukses, transaksi booking disimpan");
+            }
         }
         catch (Exception ex)
         {
