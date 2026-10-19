@@ -151,6 +151,13 @@ public class RentalTransaction
         return grandTotal;
     }
 
+    //LINQ New
+    public int GetTotalCost()
+    {
+        int subTotal = _vehicles.Sum(v => v.GetCost(RentalDays));
+        return subTotal - CalculateDiscount();
+    }
+
     public void printInvoice()
     {
         Console.WriteLine("\n=======================================================");

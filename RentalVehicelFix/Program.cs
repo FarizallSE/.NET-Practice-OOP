@@ -15,7 +15,11 @@ class Program
         new Motorcycle(2, "B 2222 MOT", "Yamaha NMAX", 2023, 100000, extraHelmet: false),
         new Car(3, "B 3333 MOB", "Toyota Avanza", 2021, 350000, withDriver: false),
         new Car(4, "B 4444 MOB", "Innova Zenix", 2024, 650000, withDriver: false),
-        new Bus(5, "B 5555 BUS", "Isuzu Elf Long", 2020, 1200000, seatCapacity: 19, withDriver: false)
+        new Bus(5, "B 5555 BUS", "Isuzu Elf Long", 2020, 1200000, seatCapacity: 19, withDriver: false),
+        // new data
+        new Bus(6, "B 6666 BUS", "Scania Bus", 2021, 1500000, seatCapacity: 30, withDriver: false),
+        new Bus(7, "B 7777 BUS", "Isuzu Elf", 2022, 1700000, seatCapacity: 25, withDriver: false),
+        new Bus(8, "B 8888 BUS", "Isuzu Elf Long", 2019, 2000000, seatCapacity: 18, withDriver: false)
     };
 
     // private static Customer[] customerData = new Customer[50];
@@ -30,11 +34,8 @@ class Program
 
     static void Main(string[] args)
     {
-        // Data awal pelanggan
-        // customerData[customerCount++] = new Customer("CUST001", "Budi Santoso", "08123456789");
-        // customerData[customerCount++] = new Customer("CUST002", "Siti Rahma", "08567891234");
-        customerRepo.Add(new Customer("CUST001", "Budi Santoso", "08123456789"));
-        customerRepo.Add(new Customer("CUST002", "Siti Rahma", "08567891234"));
+        // Inisialisasi Data Dummy (Pelanggan & Transaksi)
+        SeedInitialData();
 
         while (true)
         {
@@ -47,6 +48,9 @@ class Program
             Console.WriteLine("5. Tambah Kendaraan Baru");
             Console.WriteLine("6. Laporan Pendapatan per Jenis Kendaraan");
             Console.WriteLine("7. Kendaraan Paling Menguntungkan");
+            //newlinq 
+            Console.WriteLine("8. Tampilkan pelanggan terbaik");
+            Console.WriteLine("9. Tampilkan rata rata waktu sewa");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();
@@ -75,6 +79,13 @@ class Program
                         break;
                     case "7":
                         rentalApp.PrintMostProfitableVehicle();
+                        break;
+                        //new for linq
+                    case "8":
+                        rentalApp.PrintTopCustomer();
+                        break;
+                    case "9":
+                        rentalApp.PrintAverageRentalDuration();
                         break;
                     case "0":
                         return;
@@ -474,5 +485,86 @@ class Program
         {
             Console.WriteLine($"\n[Error]: {ex.Message}");
         }
+    }
+
+    static void SeedInitialData()
+    {
+        // 1. Data Pelanggan Dummy
+        var cust1 = new Customer("CUST001", "Budi Santoso", "08123456789");
+        var cust2 = new Customer("CUST002", "Siti Rahma", "08567891234");
+        var cust3 = new Customer("CUST003", "Ahmad Fauzi", "081311223344");
+        var cust4 = new Customer("CUST004", "Dewi Lestari", "081298765432");
+        var cust5 = new Customer("CUST005", "Rian Pratama", "085712345678");
+
+        customerRepo.Add(cust1);
+        customerRepo.Add(cust2);
+        customerRepo.Add(cust3);
+        customerRepo.Add(cust4);
+        customerRepo.Add(cust5);
+
+        // Ambil kendaraan dari armada yang sudah terdaftar
+        var vario = rentalApp.FindVehicle("B 1111 MOT")!;
+        var nmax = rentalApp.FindVehicle("B 2222 MOT")!;
+        var avanza = rentalApp.FindVehicle("B 3333 MOB")!;
+        var zenix = rentalApp.FindVehicle("B 4444 MOB")!;
+        var busElf = rentalApp.FindVehicle("B 5555 BUS")!;
+        var busScania = rentalApp.FindVehicle("B 6666 BUS")!;
+
+        // 2. Data Transaksi Dummy (Riwayat Selesai & Transaksi Berjalan)
+
+        // Transaksi 1: Budi Santoso sewa Avanza 3 hari (Selesai/Kembali Tepat Waktu)
+        var t1 = new RentalTransaction(cust1, 3);
+        t1.Add(avanza, driver: false);
+        rentalApp.Record(t1);
+        t1.Return(0);
+        transactionData.Add(t1);
+
+        // Transaksi 2: Ahmad Fauzi sewa Zenix (sopir) & Vario selama 5 hari (Diskon 10% - Selesai)
+        var t2 = new RentalTransaction(cust3, 5);
+        t2.Add(zenix, driver: true);
+        t2.Add(vario);
+        rentalApp.Record(t2);
+        t2.Return(0);
+        transactionData.Add(t2);
+
+        // Transaksi 3: Siti Rahma sewa NMAX 2 hari (Selesai, Terlambat 2 Jam Denda)
+        var t3 = new RentalTransaction(cust2, 2);
+        t3.Add(nmax);
+        rentalApp.Record(t3);
+        t3.Return(2);
+        transactionData.Add(t3);
+
+        // Transaksi 4: Ahmad Fauzi sewa Bus Elf 7 hari dengan sopir (Diskon 10% - Selesai)
+        var t4 = new RentalTransaction(cust3, 7);
+        t4.Add(busElf, driver: true);
+        rentalApp.Record(t4);
+        t4.Return(0);
+        transactionData.Add(t4);
+
+        // Transaksi 5: Dewi Lestari sewa Avanza 4 hari dengan sopir (Selesai)
+        var t5 = new RentalTransaction(cust4, 4);
+        t5.Add(avanza, driver: true);
+        rentalApp.Record(t5);
+        t5.Return(0);
+        transactionData.Add(t5);
+
+        // Transaksi 6: Dewi Lestari sewa Bus Scania 3 hari dengan sopir (Selesai)
+        var t6 = new RentalTransaction(cust4, 3);
+        t6.Add(busScania, driver: true);
+        rentalApp.Record(t6);
+        t6.Return(0);
+        transactionData.Add(t6);
+
+        // Transaksi 7: Rian Pratama sewa Vario 3 hari (Sedang Berjalan / Belum Dikembalikan)
+        var t7 = new RentalTransaction(cust5, 3);
+        t7.Add(vario);
+        rentalApp.Record(t7);
+        transactionData.Add(t7);
+
+        // Transaksi 8: Budi Santoso sewa Zenix 6 hari (Sedang Berjalan / Belum Dikembalikan)
+        var t8 = new RentalTransaction(cust1, 6);
+        t8.Add(zenix, driver: false);
+        rentalApp.Record(t8);
+        transactionData.Add(t8);
     }
 }

@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Text.RegularExpressions;
 using RentalVehicelFix.Interfaces;
 using RentalVehicelFix.Models.Vehicles;
 using RentalVehicelFix.Repositories;
@@ -302,5 +304,53 @@ public class Rental
         }
         Console.WriteLine("------------------------------");
         Console.WriteLine($"{"Total",-5}: Rp {total,12:N0}");
+    }
+
+    public void PrintTopCustomer()
+    {
+        if (_transactions.Count == 0 )
+        {
+            Console.WriteLine("Belum ada transaksi rental tercatat");
+            return;
+        }
+
+        var topCustomerData = _transactions.GroupBy(trx => trx.Customer.CustomerID).Select(group => new
+        {
+            Customer = group.First().Customer,
+            TotalSpend = group.Sum(trx => trx.GetTotalCost()),
+            TotaDays = group.Sum( trx => trx.RentalDays),
+            TransactionCount = group.Count()
+        }).OrderByDescending(x => x.TotalSpend).First();
+
+        if (topCustomerData != null)
+        {
+            Console.WriteLine("\n=============================================");
+            Console.WriteLine("    Pelanggan dengan Total Sewa Terbesar   ");
+            Console.WriteLine("=============================================");
+            Console.WriteLine($"ID Pelanggan     : {topCustomerData.Customer.CustomerID}");
+            Console.WriteLine($"Nama             : {topCustomerData.Customer.Name}");
+            Console.WriteLine($"Contact          : {topCustomerData.Customer.PhoneNumber}");
+            Console.WriteLine($"Jumlah Transaksi : {topCustomerData.TransactionCount}");
+            Console.WriteLine($"Total Pengeluaran: Rp {topCustomerData.TotalSpend:N0}");
+            Console.WriteLine("=============================================\n");
+        }
+    }
+
+    public void PrintAverageRentalDuration()
+    {
+        if (_transactions.Count == 0)
+        {
+            Console.WriteLine("Belum ada transaksi");
+            return;
+        }
+
+        var averageDays = _transactions.Average(trx => trx.RentalDays);
+
+        Console.WriteLine("\n=============================================");
+        Console.WriteLine("    Rata-rata Durasi Sewa KEndaraan    ");
+        Console.WriteLine("=============================================");
+        Console.WriteLine($"Total Transaksi   : {_transactions.Count}");
+        Console.WriteLine($"Rata-rata durasi  : {averageDays}");
+        Console.WriteLine("=============================================");
     }
 }
