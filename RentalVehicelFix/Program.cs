@@ -27,7 +27,7 @@ class Program
 
     private static Rental rentalApp = new Rental(fleetData);
 
-    static void Main(string[] args)
+    static async Task Main(string[] args)
     {
         // Data awal pelanggan
         customerData[customerCount++] = new Customer("CUST001", "Budi Santoso", "08123456789");
@@ -45,6 +45,7 @@ class Program
             Console.WriteLine("6. Urutan Kendaraan Berdasarkan Tarif");
             Console.WriteLine("7. Kendaraan yang belum pernah disewa");
             Console.WriteLine("8. Cek Servis Semua Kendaraan");
+            Console.WriteLine("9. Booking dengan Pembayaran (CancellationToken)");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();
@@ -75,6 +76,9 @@ class Program
                 case "8":
                     rentalApp.CheckAllVehicleServiceAsync().Wait();
                     break;
+                case "9":
+                    await CreateBookingWithPayment();
+                    break;
                 case "0":
                     return;
                 default:
@@ -84,6 +88,56 @@ class Program
 
             Console.WriteLine("\nEnter untuk melanjutkan...");
             Console.ReadLine();
+        }
+    }
+
+    static async Task CreateBookingWithPayment()
+    {
+        Console.WriteLine("\n--- BOOKING DENGAN PEMBAYARAN ---");
+        rentalApp.printAvailable();
+
+        var customer = GetOrCreateCustomer();
+        if (customer == null) return;
+
+        Console.Write("\nDurasi Sewa (hari): ");
+        if (!int.TryParse(Console.ReadLine(), out int days)) return;
+
+        var vehicles = new List<Vehicle>();
+        while (true)
+        {
+            Console.Write("\nMasukkan Plat Nomor Kendaraan: ");
+            var plate = Console.ReadLine()?.Trim() ?? string.Empty;
+            var vehicle = rentalApp.FindVehicle(plate);
+
+            if (vehicle == null)
+            {
+                Console.WriteLine("Kendaraan tidak ditemukan.");
+                continue;
+            }
+
+            if (vehicle.Status == "Renting")
+            {
+                Console.WriteLine("Kendaraan sedang disewa.");
+                continue;
+            }
+
+            vehicles.Add(vehicle);
+            Console.WriteLine($"Kendaraan {vehicle.PlateNumber} ditambahkan ke booking.");
+
+            Console.Write("Tambah kendaraan lagi? (y/n): ");
+            if (Console.ReadLine()?.Trim().ToLower() != "y") break;
+        }
+
+        if (vehicles.Count == 0)
+        {
+            Console.WriteLine("Tidak ada kendaraan. Booking dibatalkan.");
+            return;
+        }
+
+        var booking = await rentalApp.CreateBookingAsync(customer, vehicles, days);
+        if (booking == null)
+        {
+            Console.WriteLine("Booking gagal/dibatalkan.");
         }
     }
 

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using RentalVehicelFix.Models;
 using RentalVehicelFix.Models.Vehicles;
 using RentalVehicelFix.Repositories;
 
@@ -171,5 +172,70 @@ public class Rental
         Console.WriteLine("-------------------------------------");
         Console.WriteLine($"Total : {vehicles.Count} | OK : {ok} | Perlu Services : {needsService}");
         Console.WriteLine($"Waktu total : {stopwatch.ElapsedMilliseconds} ms");
+    }
+
+    public async Task<Booking> CreateBookingAsync(Customer customer, List<Vehicle> vehicle, int rentalDays)
+    {
+        //1. Rent semua kendaraan
+        foreach (var v in vehicle)
+        {
+            v.Rent();
+        }
+
+        var booking = new Booking(customer, vehicle, rentalDays);
+        booking.Print();
+        
+        //Pembayaran dengan batas waktu
+        bool paid = await ProcessPaymentAsync(booking, TimeSpan.FromSeconds(15));
+
+        if (paid)
+        {
+            booking.MarkAsPaid();
+            Console.WriteLine($"OK #{booking.BookingId} LUNAS, kendaraan siap diambil");
+            return booking;
+        }
+        else
+        {
+            CancelBooking(booking);
+            return null;
+        }
+    }
+
+    private void CancelBooking(Booking booking)
+    {
+        booking.MarkAsCancelled();
+        foreach (var v in booking.Vehicles)
+        {
+            v.Return();
+        }
+
+        Console.WriteLine($"[BATAL] Booking #{booking.BookingId} DIBATALKAN");
+        Console.WriteLine("Pembayaran tidak selesai dalam batas waktu.");
+        Console.WriteLine("Semua kendaraan dikembalikan ke status Available");
+    }
+
+    private async Task<bool> ProcessPaymentAsync(Booking booking, TimeSpan timeout)
+    {
+        var cts = new CancellationTokenSource();
+        cts.CancelAfter(timeout);
+
+        var paymentTask = Task.Run(() =>
+        {
+            Console.Write("Ketik 'y' lalu enter untuk membayar");
+            var input = Console.ReadLine();
+            return input?.Trim().ToLower() == "y";
+        });
+        
+        var timeOutTask = Task.Delay(Timeout.Infinite, cts.Token);
+        
+        var completedTask = await Task.WhenAny(paymentTask, timeOutTask);
+
+        if (completedTask == paymentTask)
+        {
+            cts.Cancel();
+            return await paymentTask;
+        }
+
+        return false;
     }
 }
