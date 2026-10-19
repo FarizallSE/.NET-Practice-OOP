@@ -14,6 +14,12 @@ public class Repository<T> where T : Vehicle
     }
 
     public List<T> GetAll() => _items;
+    
+    public List<T> GetAvalaiable() => GetAll().Where(x => x.Status  == "Available").ToList();
+    
+    public List<T> GetAvailableOrderByTarif() => GetAvalaiable().OrderBy(x => x.DailyRate).ToList();
+    
+    public List<T> GetNeverRented() => GetAll().Where(x => !x.HasEverBeenRented).ToList();
 
     public T FindByPlate(string plateNumber)
     {

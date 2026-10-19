@@ -7,13 +7,17 @@ namespace RentalVehicelFix;
 
 class Program
 {
-    private static List<Vehicle> fleetData = new()
+    private static List<Vehicle> fleetData = new List<Vehicle>
     {
         new Motorcycle(1, "B 1111 MOT", "Honda Vario", 2022, 80000, extraHelmet: true),
         new Motorcycle(2, "B 2222 MOT", "Yamaha NMAX", 2023, 100000, extraHelmet: false),
         new Car(3, "B 3333 MOB", "Toyota Avanza", 2021, 350000, withDriver: false),
         new Car(4, "B 4444 MOB", "Innova Zenix", 2024, 650000, withDriver: false),
-        new Bus(5, "B 5555 BUS", "Isuzu Elf Long", 2020, 1200000, seatCapacity: 19, withDriver: false)
+        new Bus(5, "B 5555 BUS", "Isuzu Elf Long", 2020, 1200000, seatCapacity: 19, withDriver: false),
+        // new data
+        new Bus(6, "B 6666 BUS", "Scania Bus", 2021, 1500000, seatCapacity: 30, withDriver: false),
+        new Bus(7, "B 7777 BUS", "Isuzu Elf", 2022, 1700000, seatCapacity: 25, withDriver: false),
+        new Bus(8, "B 8888 BUS", "Isuzu Elf Long", 2019, 2000000, seatCapacity: 18, withDriver: false)
     };
 
     private static Customer[] customerData = new Customer[50];
@@ -38,6 +42,8 @@ class Program
             Console.WriteLine("3. Proses Pengembalian");
             Console.WriteLine("4. Tambah Pelanggan");
             Console.WriteLine("5. Laporan Pendapatan per Jenis Kendaraan");
+            Console.WriteLine("6. Urutan Kendaraan Berdasarkan Tarif");
+            Console.WriteLine("7. Kendaaraan yang belum pernah disewa");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();
@@ -57,8 +63,13 @@ class Program
                     AddNewCustomer();
                     break;
                 case "5":
-                case "7":
                     rentalApp.PrintRevenueByType();
+                    break;
+                case "6" :
+                    rentalApp.printOrderByTarif();
+                    break;
+                case "7":
+                    rentalApp.PrintNeverRented();
                     break;
                 case "0":
                     return;

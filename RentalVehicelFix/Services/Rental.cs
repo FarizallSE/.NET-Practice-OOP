@@ -45,7 +45,7 @@ public class Rental
         }
     }
 
-    public void printAvailable()
+    public void printAvailable2()
     {
         Console.WriteLine("\n--- DAFTAR KENDARAAN TERSEDIA (AVAILABLE) ---");
         bool anyAvailable = false;
@@ -62,6 +62,51 @@ public class Rental
             Console.WriteLine("Tidak ada kendaraan yang tersedia saat ini.");
         }
         Console.WriteLine("---------------------------------------------");
+    }
+
+    public void printAvailable()
+    {
+        Console.WriteLine("\n--- DAFTAR KENDARAAN TERSEDIA (AVAILABLE) ---");
+        var vehicles = _vehicleRepo.GetAvalaiable();
+        foreach (var v in vehicles)
+        {
+            v.Info();
+        }
+        if (!vehicles.Any())
+        {
+            Console.WriteLine("Tidak ada kendaraan yang tersedia saat ini.");
+        }
+    }
+
+    public void printOrderByTarif()
+    {
+        Console.WriteLine("\n--- ORDER BY TARIF ---");
+        var vehicles = _vehicleRepo.GetAvailableOrderByTarif();
+
+        foreach (var v in vehicles)
+        {
+            v.Info();
+        }
+        if (!vehicles.Any())
+        {
+            Console.WriteLine("Tidak ada kendaraan yang tersedia saat ini.");
+        }
+    }
+
+    public void PrintNeverRented()
+    {
+        var vehicles = _vehicleRepo.GetNeverRented();
+        Console.WriteLine("\n--- DAFTAR BELUM PERNAH DISEWA ---");
+        if (vehicles.Any())
+        {
+            foreach (var vehicle in vehicles)
+            {
+                vehicle.Info();
+                Console.WriteLine("----------------------------------");
+            }
+        } else {
+            Console.WriteLine("Tidak ada kendaraan yang belum pernah disewa!");
+        }
     }
 
     public void PrintRevenueByType()

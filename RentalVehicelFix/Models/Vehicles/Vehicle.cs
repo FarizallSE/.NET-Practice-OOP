@@ -15,6 +15,7 @@ public abstract class Vehicle
         Year = year;
         DailyRate = dailyRate;
         Status = "Available";
+        RentalCount = 0;
     }
 
     private int _dailyRate;
@@ -32,6 +33,8 @@ public abstract class Vehicle
     }
 
     public string Status { get; private set; } = "Available";
+    public int RentalCount { get; private set; }
+    public bool HasEverBeenRented => RentalCount > 0;
 
     public abstract int GetCost(int days);
 
@@ -50,6 +53,7 @@ public abstract class Vehicle
     public void Rent()
     {
         Status = "Renting";
+        RentalCount++;
     }
 
     public void Return()
