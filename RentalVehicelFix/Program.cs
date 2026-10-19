@@ -43,7 +43,7 @@ class Program
             Console.WriteLine("4. Tambah Pelanggan");
             Console.WriteLine("5. Laporan Pendapatan per Jenis Kendaraan");
             Console.WriteLine("6. Urutan Kendaraan Berdasarkan Tarif");
-            Console.WriteLine("7. Kendaaraan yang belum pernah disewa");
+            Console.WriteLine("7. Kendaraan yang belum pernah disewa");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();

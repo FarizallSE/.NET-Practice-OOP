@@ -32,6 +32,8 @@ public class RentalTransaction
         this.customer = customer ?? throw new ArgumentNullException(nameof(customer));
         RentalDays = rentalDays;
     }
+
+    public IReadOnlyList<Vehicle> Vehicles => _vehicles.Take(_count).ToList();
     
     public bool Add(Vehicle vehicle)
     {

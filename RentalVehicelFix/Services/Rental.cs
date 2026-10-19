@@ -96,113 +96,51 @@ public class Rental
     public void PrintNeverRented()
     {
         var vehicles = _vehicleRepo.GetNeverRented();
-        Console.WriteLine("\n--- DAFTAR BELUM PERNAH DISEWA ---");
+        Console.WriteLine("\n--- DAFTAR KENDARAAN BELUM PERNAH DISEWA ---");
         if (vehicles.Any())
         {
             foreach (var vehicle in vehicles)
             {
+                Console.WriteLine($"Jenis          : {vehicle.GetType().Name}");
                 vehicle.Info();
                 Console.WriteLine("----------------------------------");
             }
-        } else {
+        }
+        else
+        {
             Console.WriteLine("Tidak ada kendaraan yang belum pernah disewa!");
         }
     }
 
     public void PrintRevenueByType()
     {
-        decimal[] revenue = new decimal[3];
-        string[] typeNames = { "Car", "Bus", "Bike" };
-
-        foreach (var trx in _transactions)
-        {
-            if (trx == null) continue;
-
-            int count = 0;
-            var getCountMethod = trx.GetType().GetMethod("GetVehicleCount");
-            var getVehicleMethod = trx.GetType().GetMethod("GetVehicleAt");
-
-            if (getCountMethod != null && getVehicleMethod != null)
-            {
-                count = (int)getCountMethod.Invoke(trx, null)!;
-                for (int j = 0; j < count; j++)
-                {
-                    var v = getVehicleMethod.Invoke(trx, new object[] { j }) as Vehicle;
-                    if (v == null) continue;
-
-                    int typeIndex = v switch
-                    {
-                        Car => 0,
-                        Bus => 1,
-                        Motorcycle => 2,
-                        _ => v.GetType().Name switch
-                        {
-                            "Car" => 0,
-                            "Bus" => 1,
-                            "Bike" or "Motorcycle" => 2,
-                            _ => -1
-                        }
-                    };
-
-                    if (typeIndex >= 0)
-                    {
-                        revenue[typeIndex] += v.GetCost(trx.RentalDays);
-                    }
-                }
-            }
-            else
-            {
-                var vehiclesField = trx.GetType().GetField("_vehicles", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                var countField = trx.GetType().GetField("_count", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                Vehicle[]? vehicles = null;
-                if (vehiclesField != null)
-                {
-                    vehicles = vehiclesField.GetValue(trx) as Vehicle[];
-                }
-                if (countField != null)
-                {
-                    count = (int)(countField.GetValue(trx) ?? 0);
-                }
-
-                if (vehicles != null)
-                {
-                    for (int j = 0; j < count; j++)
-                    {
-                        var v = vehicles[j];
-                        if (v == null) continue;
-
-                        int typeIndex = v switch
-                        {
-                            Car => 0,
-                            Bus => 1,
-                            Motorcycle => 2,
-                            _ => v.GetType().Name switch
-                            {
-                                "Car" => 0,
-                                "Bus" => 1,
-                                "Bike" or "Motorcycle" => 2,
-                                _ => -1
-                            }
-                        };
-
-                        if (typeIndex >= 0)
-                        {
-                            revenue[typeIndex] += v.GetCost(trx.RentalDays);
-                        }
-                    }
-                }
-            }
-        }
-
+        var revenueByType = GetRevenueType();
         Console.WriteLine("\n--- PENDAPATAN PER JENIS KENDARAAN ---");
+        string[] typeNames = { "Car", "Bus", "Bike" };
         decimal total = 0;
-        for (int i = 0; i < revenue.Length; i++)
+        foreach (var name in typeNames)
         {
-            Console.WriteLine($"{typeNames[i],-5}: Rp {revenue[i],12:N0}");
-            total += revenue[i];
+            decimal value = revenueByType.TryGetValue(name, out var revenue) ? revenue : 0;
+            Console.WriteLine($"{name,-5}: Rp {value,12:N0}");
+            total += value;
         }
         Console.WriteLine("------------------------------");
         Console.WriteLine($"{"Total",-5}: Rp {total,12:N0}");
+    }
+
+    public Dictionary<string, decimal> GetRevenueType()
+    {
+        var revenueByType = _transactions
+            .Where(t => t != null)
+            .SelectMany(t => t.Vehicles.Select(v => new { Vehicle = v, Days = t.RentalDays }))
+            .GroupBy(x => x.Vehicle switch
+            {
+                Car => "Car",
+                Bus => "Bus",
+                Motorcycle => "Bike",
+                _ => "Other"
+            })
+            .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.Vehicle.GetCost(x.Days)));
+        return revenueByType;
     }
 }
