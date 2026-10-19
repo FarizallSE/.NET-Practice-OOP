@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using RentalVehicelFix.Models.Vehicles;
 using RentalVehicelFix.Repositories;
 
@@ -142,5 +143,33 @@ public class Rental
             })
             .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.Vehicle.GetCost(x.Days)));
         return revenueByType;
+    }
+
+    public async Task CheckAllVehicleServiceAsync()
+    {
+        var vehicles = _vehicleRepo.GetAll();
+        Console.WriteLine("--- CEK SERVIS SEMUA KENDARAAN ----");
+        
+        Stopwatch stopwatch = Stopwatch.StartNew();
+        
+        //membuat task untuk semua kendaraan, jalankan bersamaan dengan whenAll
+        var tasks = vehicles.Select(v => v.CheckServiceAsync()).ToArray();
+        await Task.WhenAll(tasks);
+        
+        stopwatch.Stop();
+
+        Console.WriteLine("--- HASIL CEK SERVIS---");
+
+        int ok = 0, needsService = 0;
+        foreach (var v in vehicles)
+        {
+            Console.WriteLine($"{v.PlateNumber, -12} {v.GetType().Name, -12} : {v.ServiceStatus}");
+            if (v.ServiceStatus == "OK") ok++;
+            else needsService++;
+        }
+
+        Console.WriteLine("-------------------------------------");
+        Console.WriteLine($"Total : {vehicles.Count} | OK : {ok} | Perlu Services : {needsService}");
+        Console.WriteLine($"Waktu total : {stopwatch.ElapsedMilliseconds} ms");
     }
 }

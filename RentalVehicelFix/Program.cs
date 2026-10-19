@@ -44,6 +44,7 @@ class Program
             Console.WriteLine("5. Laporan Pendapatan per Jenis Kendaraan");
             Console.WriteLine("6. Urutan Kendaraan Berdasarkan Tarif");
             Console.WriteLine("7. Kendaraan yang belum pernah disewa");
+            Console.WriteLine("8. Cek Servis Semua Kendaraan");
             Console.WriteLine("0. Keluar");
             Console.Write("Pilih: ");
             var choice = Console.ReadLine()?.Trim();
@@ -70,6 +71,9 @@ class Program
                     break;
                 case "7":
                     rentalApp.PrintNeverRented();
+                    break;
+                case "8":
+                    rentalApp.CheckAllVehicleServiceAsync().Wait();
                     break;
                 case "0":
                     return;

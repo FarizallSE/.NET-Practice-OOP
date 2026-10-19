@@ -36,6 +36,8 @@ public abstract class Vehicle
     public int RentalCount { get; private set; }
     public bool HasEverBeenRented => RentalCount > 0;
 
+    public string ServiceStatus { get; private set; } =  "Not Checked"; 
+
     public abstract int GetCost(int days);
 
     protected int GetBaseRent(int days)
@@ -68,5 +70,17 @@ public abstract class Vehicle
         Console.WriteLine($"PlateNumber : {PlateNumber}");
         Console.WriteLine($"DailyRate   : {DailyRate}");
         Console.WriteLine($"Status      : {Status}");
+    }
+
+    public async Task CheckServiceAsync()
+    {
+        int delay = 500 + (PlateNumber.Sum(c => c) % 1500);
+
+        Console.WriteLine($"[Servis] Mengecek {Brand} ({PlateNumber})");
+        await Task.Delay(delay);
+        
+        ServiceStatus = Random.Shared.Next(0, 2) == 0 ? "OK" : "Needs Service";
+
+        Console.WriteLine($"[Servis] {Brand} ({PlateNumber} selesai dalam {delay} ms - Status : {ServiceStatus}) ");
     }
 }
